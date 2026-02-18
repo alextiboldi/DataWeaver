@@ -58,8 +58,8 @@ export async function POST(req: Request): Promise<NextResponse> {
           where: { id: connection.id },
           data: { databaseDocId: databaseDoc.id },
         });
-      } catch {
-        // Discovery failure shouldn't block connection creation
+      } catch (err) {
+        console.error("[connections] Discovery failed:", err);
       }
     }
   }

@@ -1,11 +1,11 @@
 import prisma from "@/lib/db";
-import { introspectSchema } from "@/lib/toolbox/introspect";
+import { introspectDirect } from "./direct-introspect";
 import { computeFingerprint } from "./fingerprint";
 import { humanize } from "./utils";
 
 export async function discoverAndSync(connectionUri: string, name: string) {
   const fingerprint = computeFingerprint(connectionUri);
-  const schema = await introspectSchema();
+  const schema = await introspectDirect(connectionUri);
 
   const databaseDoc = await prisma.databaseDoc.upsert({
     where: { fingerprint },
