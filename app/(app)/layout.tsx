@@ -7,6 +7,7 @@ import {
   BookOpen,
   Cable,
   Blocks,
+  Puzzle,
   Hexagon,
   CircleUser,
 } from "lucide-react";
@@ -16,6 +17,7 @@ const navItems = [
   { title: "Connections", href: "/connections", icon: Cable },
   { title: "Data Catalog", href: "/catalog", icon: BookOpen },
   { title: "Semantic Models", href: "/semantic", icon: Blocks },
+  { title: "Components", href: "/components", icon: Puzzle },
 ];
 
 function Sidebar() {
