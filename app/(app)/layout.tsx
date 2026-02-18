@@ -5,12 +5,14 @@ import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
   BookOpen,
+  Cable,
   Hexagon,
   CircleUser,
 } from "lucide-react";
 
 const navItems = [
   { title: "Dashboards", href: "/dashboards", icon: LayoutDashboard },
+  { title: "Connections", href: "/connections", icon: Cable },
   { title: "Data Catalog", href: "/catalog", icon: BookOpen },
 ];
 
