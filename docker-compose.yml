@@ -1,0 +1,48 @@
+services:
+  dataweaver-db:
+    image: postgres:17
+    environment:
+      POSTGRES_DB: dataweaver
+      POSTGRES_USER: dataweaver
+      POSTGRES_PASSWORD: dataweaverpass
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata-app:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U dataweaver -d dataweaver"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  pg-sample-db:
+    image: postgres:17
+    environment:
+      POSTGRES_DB: sampledb
+      POSTGRES_USER: sampleuser
+      POSTGRES_PASSWORD: samplepass
+    ports:
+      - "5433:5432"
+    volumes:
+      - pgdata-sample:/var/lib/postgresql/data
+      - ./tooling/sample-db/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sampleuser -d sampledb"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  toolbox:
+    image: us-central1-docker.pkg.dev/database-toolbox/toolbox/toolbox:0.27.0
+    volumes:
+      - ./tooling/toolbox-server/tools.yaml:/app/tools.yaml
+    command: ["--tools-file", "/app/tools.yaml", "--address", "0.0.0.0", "--port", "5000"]
+    ports:
+      - "5050:5000"
+    depends_on:
+      pg-sample-db:
+        condition: service_healthy
+
+volumes:
+  pgdata-app:
+  pgdata-sample:

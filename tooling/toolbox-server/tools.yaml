@@ -1,0 +1,60 @@
+sources:
+  sample-pg:
+    kind: postgres
+    host: pg-sample-db
+    port: 5432
+    database: sampledb
+    user: sampleuser
+    password: samplepass
+
+tools:
+  execute-sql:
+    kind: postgres-sql
+    source: sample-pg
+    description: "Execute a read-only SQL query against the sample database"
+    statement: "{{.sql}}"
+    templateParameters:
+      - name: sql
+        type: string
+        description: "The SQL query to execute"
+
+  list-tables:
+    kind: postgres-sql
+    source: sample-pg
+    description: "List all tables in the database"
+    statement: "SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' ORDER BY table_name;"
+
+  describe-table:
+    kind: postgres-sql
+    source: sample-pg
+    description: "Describe the columns of a specific table"
+    statement: "SELECT column_name, data_type, is_nullable, column_default FROM information_schema.columns WHERE table_schema = 'public' AND table_name = $1 ORDER BY ordinal_position;"
+    parameters:
+      - name: table_name
+        type: string
+        description: "The name of the table to describe"
+
+  get-foreign-keys:
+    kind: postgres-sql
+    source: sample-pg
+    description: "Get foreign key relationships for a table"
+    statement: >
+      SELECT
+        kcu.column_name,
+        ccu.table_name AS foreign_table_name,
+        ccu.column_name AS foreign_column_name
+      FROM information_schema.table_constraints AS tc
+      JOIN information_schema.key_column_usage AS kcu ON tc.constraint_name = kcu.constraint_name
+      JOIN information_schema.constraint_column_usage AS ccu ON ccu.constraint_name = tc.constraint_name
+      WHERE tc.constraint_type = 'FOREIGN KEY' AND tc.table_name = $1;
+    parameters:
+      - name: table_name
+        type: string
+        description: "The name of the table"
+
+toolsets:
+  sample-toolset:
+    - execute-sql
+    - list-tables
+    - describe-table
+    - get-foreign-keys
