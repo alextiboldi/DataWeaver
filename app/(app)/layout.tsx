@@ -8,6 +8,7 @@ import {
   Cable,
   Blocks,
   Puzzle,
+  MessageSquare,
   Hexagon,
   CircleUser,
 } from "lucide-react";
@@ -18,6 +19,7 @@ const navItems = [
   { title: "Data Catalog", href: "/catalog", icon: BookOpen },
   { title: "Semantic Models", href: "/semantic", icon: Blocks },
   { title: "Components", href: "/components", icon: Puzzle },
+  { title: "Chat", href: "/chat", icon: MessageSquare },
 ];
 
 function Sidebar() {
