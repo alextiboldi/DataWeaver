@@ -6,6 +6,7 @@ import {
   LayoutDashboard,
   BookOpen,
   Cable,
+  Blocks,
   Hexagon,
   CircleUser,
 } from "lucide-react";
@@ -14,6 +15,7 @@ const navItems = [
   { title: "Dashboards", href: "/dashboards", icon: LayoutDashboard },
   { title: "Connections", href: "/connections", icon: Cable },
   { title: "Data Catalog", href: "/catalog", icon: BookOpen },
+  { title: "Semantic Models", href: "/semantic", icon: Blocks },
 ];
 
 function Sidebar() {
