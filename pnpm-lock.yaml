@@ -11,6 +11,12 @@ importers:
       '@ai-sdk/google':
         specifier: ^3.0.29
         version: 3.0.29(zod@4.3.6)
+      '@json-render/core':
+        specifier: 0.7.0
+        version: 0.7.0(zod@4.3.6)
+      '@json-render/react':
+        specifier: 0.7.0
+        version: 0.7.0(react@19.2.3)(zod@4.3.6)
       '@prisma/adapter-pg':
         specifier: ^7.4.0
         version: 7.4.0
@@ -754,6 +760,16 @@ packages:
 
   '@jridgewell/trace-mapping@0.3.31':
     resolution: {integrity: sha512-zzNR+SdQSDJzc8joaeP8QQoCQr8NuYx2dIIytl1QeBEZHJ9uW6hebsrYgbz8hJwUQao3TWCMtmfV8Nu1twOLAw==}
+
+  '@json-render/core@0.7.0':
+    resolution: {integrity: sha512-CcT+YVNeh/nu+He9jtu9UYUb7UBsqz68Yfqr2oEpLRXEbmW5TQCmB9KxOZAcdiPtn8z09KlR9nl8KtbTupOOAQ==}
+    peerDependencies:
+      zod: ^4.0.0
+
+  '@json-render/react@0.7.0':
+    resolution: {integrity: sha512-kmYQg60LGjz6+T074LyN8/2XHG42KTzZTVz4E8g5qojZg+axJ1Yv9qLCmA4mnWlBHu3rLCbPB1V5a8GvRTylNg==}
+    peerDependencies:
+      react: ^19.2.3
 
   '@modelcontextprotocol/sdk@1.26.0':
     resolution: {integrity: sha512-Y5RmPncpiDtTXDbLKswIJzTqu2hyBKxTNsgKqKclDbhIgg1wgtf1fRuvxgTnRfcnxtvvgbIEcqUOzZrJ6iSReg==}
@@ -5238,6 +5254,17 @@ snapshots:
     dependencies:
       '@jridgewell/resolve-uri': 3.1.2
       '@jridgewell/sourcemap-codec': 1.5.5
+
+  '@json-render/core@0.7.0(zod@4.3.6)':
+    dependencies:
+      zod: 4.3.6
+
+  '@json-render/react@0.7.0(react@19.2.3)(zod@4.3.6)':
+    dependencies:
+      '@json-render/core': 0.7.0(zod@4.3.6)
+      react: 19.2.3
+    transitivePeerDependencies:
+      - zod
 
   '@modelcontextprotocol/sdk@1.26.0(zod@3.25.76)':
     dependencies:
