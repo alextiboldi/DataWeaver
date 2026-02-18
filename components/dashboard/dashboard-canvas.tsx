@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Responsive, useContainerWidth, type Layout, type LayoutItem, type ResponsiveLayouts } from "react-grid-layout";
+import { GridLayout, useContainerWidth, type LayoutItem } from "react-grid-layout";
 import "react-grid-layout/css/styles.css";
 import "react-resizable/css/styles.css";
 import { X, GripVertical, Pencil, Info } from "lucide-react";
@@ -165,9 +165,8 @@ export function DashboardCanvas({
     minH: 2,
   }));
 
-  function handleLayoutChange(_currentLayout: Layout, allLayouts: ResponsiveLayouts): void {
-    const lgLayout = allLayouts.lg ?? _currentLayout;
-    onLayoutChange([...lgLayout]);
+  function handleLayoutChange(layout: readonly LayoutItem[]): void {
+    onLayoutChange([...layout]);
   }
 
   const { containerRef, width, mounted } = useContainerWidth();
@@ -175,13 +174,11 @@ export function DashboardCanvas({
   return (
     <div ref={containerRef}>
     {mounted && (
-    <Responsive
+    <GridLayout
       className="layout"
       width={width}
-      layouts={{ lg: layouts }}
-      breakpoints={{ lg: 1200, md: 996, sm: 768, xs: 480, xxs: 0 }}
-      cols={{ lg: 12, md: 10, sm: 6, xs: 4, xxs: 2 }}
-      rowHeight={80}
+      layout={layouts}
+      gridConfig={{ cols: 12, rowHeight: 80 }}
       dragConfig={{ handle: ".drag-handle" }}
       onLayoutChange={handleLayoutChange}
     >
@@ -251,7 +248,7 @@ export function DashboardCanvas({
           </div>
         );
       })}
-    </Responsive>
+    </GridLayout>
     )}
     </div>
   );
