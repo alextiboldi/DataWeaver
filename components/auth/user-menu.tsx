@@ -32,11 +32,11 @@ export function UserMenu(): React.ReactElement | null {
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-accent transition-colors outline-none">
-        <Avatar className="size-7">
+      <DropdownMenuTrigger className="flex w-full min-w-0 items-center gap-2 overflow-hidden rounded-md px-3 py-2 text-sm hover:bg-accent transition-colors outline-none">
+        <Avatar className="size-7 shrink-0">
           <AvatarFallback className="text-xs">{initials}</AvatarFallback>
         </Avatar>
-        <div className="flex-1 text-left">
+        <div className="min-w-0 flex-1 text-left group-data-[collapsible=icon]:hidden">
           <div className="truncate font-medium text-sm">
             {user.name ?? user.email}
           </div>

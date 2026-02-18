@@ -1,5 +1,6 @@
 "use client";
 
+import { useCallback, useEffect, useRef } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -13,6 +14,23 @@ import {
 } from "lucide-react";
 import { SessionProvider } from "next-auth/react";
 import { UserMenu } from "@/components/auth/user-menu";
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarHeader,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarProvider,
+  SidebarInset,
+  useSidebar,
+} from "@/components/ui/sidebar";
+
+const EXPAND_DELAY = 200;
+const COLLAPSE_DELAY = 300;
 
 const navItems = [
   { title: "Dashboards", href: "/dashboards", icon: LayoutDashboard },
@@ -23,43 +41,79 @@ const navItems = [
   { title: "Chat", href: "/chat", icon: MessageSquare },
 ];
 
-function Sidebar() {
+function AppSidebar() {
   const pathname = usePathname();
+  const { setOpen } = useSidebar();
+  const expandTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const collapseTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handleMouseEnter = useCallback(() => {
+    if (collapseTimeout.current) {
+      clearTimeout(collapseTimeout.current);
+      collapseTimeout.current = null;
+    }
+    expandTimeout.current = setTimeout(() => setOpen(true), EXPAND_DELAY);
+  }, [setOpen]);
+
+  const handleMouseLeave = useCallback(() => {
+    if (expandTimeout.current) {
+      clearTimeout(expandTimeout.current);
+      expandTimeout.current = null;
+    }
+    collapseTimeout.current = setTimeout(() => setOpen(false), COLLAPSE_DELAY);
+  }, [setOpen]);
+
+  useEffect(() => {
+    return () => {
+      if (expandTimeout.current) clearTimeout(expandTimeout.current);
+      if (collapseTimeout.current) clearTimeout(collapseTimeout.current);
+    };
+  }, []);
 
   return (
-    <aside className="w-[264px] border-r-2 border-black bg-white flex flex-col">
-      <div className="p-4 border-b-2 border-black">
+    <Sidebar
+      collapsible="icon"
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+    >
+      <SidebarHeader>
         <Link
           href="/dashboards"
-          className="uppercase tracking-tighter font-black text-xl flex items-center gap-2"
+          className="uppercase tracking-tighter font-black text-xl flex items-center gap-2 px-2 py-1"
         >
           <Hexagon
-            className="w-6 h-6 fill-black text-white"
+            className="w-6 h-6 shrink-0 fill-black text-white"
             strokeWidth={2}
           />
-          DataWeaver
+          <span className="truncate">DataWeaver</span>
         </Link>
-      </div>
-      <nav className="flex-1 p-2">
-        {navItems.map((item) => (
-          <Link
-            key={item.href}
-            href={item.href}
-            className={`flex items-center gap-2 rounded-none px-3 py-2 text-xs font-bold uppercase tracking-widest transition-colors ${
-              pathname?.startsWith(item.href)
-                ? "bg-black text-white"
-                : "hover:bg-neutral-100"
-            }`}
-          >
-            <item.icon className="size-4" strokeWidth={2} />
-            <span>{item.title}</span>
-          </Link>
-        ))}
-      </nav>
-      <div className="border-t-2 border-black p-2">
+      </SidebarHeader>
+      <SidebarContent>
+        <SidebarGroup>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {navItems.map((item) => (
+                <SidebarMenuItem key={item.href}>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={pathname?.startsWith(item.href)}
+                    tooltip={item.title}
+                  >
+                    <Link href={item.href}>
+                      <item.icon />
+                      <span>{item.title}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+      </SidebarContent>
+      <SidebarFooter>
         <UserMenu />
-      </div>
-    </aside>
+      </SidebarFooter>
+    </Sidebar>
   );
 }
 
@@ -70,10 +124,10 @@ export default function AppLayout({
 }) {
   return (
     <SessionProvider>
-      <div className="flex h-screen">
-        <Sidebar />
-        <main className="flex-1 overflow-hidden">{children}</main>
-      </div>
+      <SidebarProvider defaultOpen={false}>
+        <AppSidebar />
+        <SidebarInset>{children}</SidebarInset>
+      </SidebarProvider>
     </SessionProvider>
   );
 }
