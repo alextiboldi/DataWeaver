@@ -5,6 +5,7 @@ import {
   createConnectionSchema,
   type ConnectionTestResult,
 } from "@/lib/types/api";
+import { discoverAndSync } from "@/lib/catalog/discover";
 
 export async function GET(): Promise<NextResponse> {
   const connections = await prisma.dataSource.findMany({
@@ -46,7 +47,21 @@ export async function POST(req: Request): Promise<NextResponse> {
       data: { status: "connected" },
     });
 
-    // TODO: Auto-discover catalog (Task 4.1: discoverAndSync)
+    if (parsed.data.connectionUri) {
+      try {
+        const databaseDoc = await discoverAndSync(
+          parsed.data.connectionUri,
+          parsed.data.name,
+        );
+        databaseDocId = databaseDoc.id;
+        await prisma.dataSource.update({
+          where: { id: connection.id },
+          data: { databaseDocId: databaseDoc.id },
+        });
+      } catch {
+        // Discovery failure shouldn't block connection creation
+      }
+    }
   }
 
   return NextResponse.json(
