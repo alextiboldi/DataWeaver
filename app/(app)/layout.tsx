@@ -10,8 +10,9 @@ import {
   Puzzle,
   MessageSquare,
   Hexagon,
-  CircleUser,
 } from "lucide-react";
+import { SessionProvider } from "next-auth/react";
+import { UserMenu } from "@/components/auth/user-menu";
 
 const navItems = [
   { title: "Dashboards", href: "/dashboards", icon: LayoutDashboard },
@@ -56,10 +57,7 @@ function Sidebar() {
         ))}
       </nav>
       <div className="border-t-2 border-black p-2">
-        <div className="flex items-center gap-2 px-3 py-2 text-xs font-bold uppercase tracking-widest text-muted-foreground">
-          <CircleUser className="size-4" strokeWidth={2} />
-          <span>User</span>
-        </div>
+        <UserMenu />
       </div>
     </aside>
   );
@@ -71,9 +69,11 @@ export default function AppLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex h-screen">
-      <Sidebar />
-      <main className="flex-1 overflow-hidden">{children}</main>
-    </div>
+    <SessionProvider>
+      <div className="flex h-screen">
+        <Sidebar />
+        <main className="flex-1 overflow-hidden">{children}</main>
+      </div>
+    </SessionProvider>
   );
 }
