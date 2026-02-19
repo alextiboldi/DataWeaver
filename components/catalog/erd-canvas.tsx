@@ -96,12 +96,12 @@ function buildEdges(tables: TableData[]): Edge[] {
             label: col.columnName,
             type: "default",
             style: {
-              stroke: "hsl(var(--muted-foreground))",
+              stroke: "var(--muted-foreground)",
               strokeWidth: 1.5,
             },
             labelStyle: {
               fontSize: 10,
-              fill: "hsl(var(--muted-foreground))",
+              fill: "var(--muted-foreground)",
             },
           });
         }
