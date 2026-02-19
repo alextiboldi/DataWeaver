@@ -12,6 +12,7 @@ import {
   Hexagon,
 } from "lucide-react";
 import { SessionProvider } from "next-auth/react";
+import { Providers } from "@/components/providers";
 import { UserMenu } from "@/components/auth/user-menu";
 import {
   Sidebar,
@@ -121,11 +122,13 @@ export default function AppLayout({
   children: React.ReactNode;
 }) {
   return (
-    <SessionProvider>
-      <SidebarProvider defaultOpen={false}>
-        <AppSidebar />
-        <SidebarInset>{children}</SidebarInset>
-      </SidebarProvider>
-    </SessionProvider>
+    <Providers>
+      <SessionProvider>
+        <SidebarProvider defaultOpen={false}>
+          <AppSidebar />
+          <SidebarInset>{children}</SidebarInset>
+        </SidebarProvider>
+      </SessionProvider>
+    </Providers>
   );
 }

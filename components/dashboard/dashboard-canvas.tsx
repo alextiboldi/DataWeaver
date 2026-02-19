@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { useQueries } from "@tanstack/react-query";
 import { GridLayout, useContainerWidth, type LayoutItem } from "react-grid-layout";
 import "react-grid-layout/css/styles.css";
 import "react-resizable/css/styles.css";
@@ -100,13 +101,6 @@ function EditableTitle({
   );
 }
 
-interface PanelDataCache {
-  [panelId: string]:
-    | { status: "loading" }
-    | { status: "error"; message: string }
-    | { status: "loaded"; data: QueryResponse };
-}
-
 export function DashboardCanvas({
   panels,
   dataSourceId,
@@ -114,46 +108,44 @@ export function DashboardCanvas({
   onRemovePanel,
   onRenamePanel,
 }: DashboardCanvasProps): React.ReactElement {
-  const [panelData, setPanelData] = React.useState<PanelDataCache>({});
-
-  React.useEffect(() => {
-    for (const panel of panels) {
-      if (panelData[panel.id]) continue;
-
-      setPanelData((prev) => ({
-        ...prev,
-        [panel.id]: { status: "loading" },
-      }));
-
-      fetch("/api/query", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          dataSourceId: dataSourceId ?? "default",
-          sql: panel.sql,
-        }),
-      })
-        .then(async (res) => {
-          if (!res.ok) {
-            const err = (await res.json()) as { error?: string };
-            throw new Error(err.error ?? "Query failed");
-          }
-          return res.json() as Promise<QueryResponse>;
-        })
-        .then((data) => {
-          setPanelData((prev) => ({
-            ...prev,
-            [panel.id]: { status: "loaded", data },
-          }));
-        })
-        .catch((err: Error) => {
-          setPanelData((prev) => ({
-            ...prev,
-            [panel.id]: { status: "error", message: err.message },
-          }));
+  const panelQueries = useQueries({
+    queries: panels.map((panel) => ({
+      queryKey: ["panel-data", panel.id, panel.sql],
+      queryFn: async () => {
+        const res = await fetch("/api/query", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            dataSourceId: dataSourceId ?? "default",
+            sql: panel.sql,
+          }),
         });
-    }
-  }, [panels, panelData]);
+        if (!res.ok) {
+          const err = (await res.json()) as { error?: string };
+          throw new Error(err.error ?? "Query failed");
+        }
+        return res.json() as Promise<QueryResponse>;
+      },
+      staleTime: Infinity,
+    })),
+  });
+
+  const panelDataMap = React.useMemo(() => {
+    const map: Record<string, { status: "loading" | "error" | "loaded"; data?: QueryResponse; message?: string }> = {};
+    panels.forEach((panel, i) => {
+      const query = panelQueries[i];
+      if (query.isLoading) {
+        map[panel.id] = { status: "loading" };
+      } else if (query.isError) {
+        map[panel.id] = { status: "error", message: query.error instanceof Error ? query.error.message : "Query failed" };
+      } else if (query.data) {
+        map[panel.id] = { status: "loaded", data: query.data };
+      } else {
+        map[panel.id] = { status: "loading" };
+      }
+    });
+    return map;
+  }, [panels, panelQueries]);
 
   const layouts: LayoutItem[] = panels.map((panel) => ({
     i: panel.id,
@@ -183,7 +175,7 @@ export function DashboardCanvas({
       onLayoutChange={handleLayoutChange}
     >
       {panels.map((panel) => {
-        const cached = panelData[panel.id];
+        const cached = panelDataMap[panel.id];
         return (
           <div key={panel.id}>
             <Card className="h-full flex flex-col overflow-hidden">
@@ -234,11 +226,11 @@ export function DashboardCanvas({
                     {cached.message}
                   </div>
                 ) : panel.chartType === "table" ? (
-                  <DataTable data={cached.data} />
+                  <DataTable data={cached.data!} />
                 ) : (
                   <div className="h-full w-full">
                     <ChartRenderer
-                      data={cached.data}
+                      data={cached.data!}
                       chartType={panel.chartType as ChartType}
                     />
                   </div>

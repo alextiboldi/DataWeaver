@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Sparkles } from "lucide-react";
 import {
   Sheet,
@@ -51,18 +52,18 @@ export function TableDetailSheet({
   onOpenChange,
   onUpdated,
 }: TableDetailSheetProps) {
-  const [table, setTable] = React.useState<TableDetail | null>(null);
-  const [loading, setLoading] = React.useState(false);
+  const queryClient = useQueryClient();
   const [aiLoading, setAiLoading] = React.useState(false);
 
-  React.useEffect(() => {
-    if (!tableId || !open) return;
-    setLoading(true);
-    fetch(`/api/catalog/${catalogId}/tables/${tableId}`)
-      .then((r) => r.json())
-      .then((data: { table: TableDetail }) => setTable(data.table))
-      .finally(() => setLoading(false));
-  }, [catalogId, tableId, open]);
+  const { data: table, isLoading } = useQuery({
+    queryKey: ["table-detail", catalogId, tableId],
+    queryFn: async () => {
+      const res = await fetch(`/api/catalog/${catalogId}/tables/${tableId}`);
+      const data: { table: TableDetail } = await res.json();
+      return data.table;
+    },
+    enabled: !!tableId && open,
+  });
 
   const handleTableUpdate = async (
     field: "displayName" | "description",
@@ -74,6 +75,7 @@ export function TableDetailSheet({
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ [field]: value }),
     });
+    void queryClient.invalidateQueries({ queryKey: ["table-detail", catalogId, tableId] });
     onUpdated();
   };
 
@@ -91,6 +93,7 @@ export function TableDetailSheet({
         body: JSON.stringify({ [field]: value }),
       },
     );
+    void queryClient.invalidateQueries({ queryKey: ["table-detail", catalogId, tableId] });
     onUpdated();
   };
 
@@ -102,9 +105,7 @@ export function TableDetailSheet({
         `/api/catalog/${catalogId}/tables/${tableId}/ai-document`,
         { method: "POST" },
       );
-      const res = await fetch(`/api/catalog/${catalogId}/tables/${tableId}`);
-      const data: { table: TableDetail } = await res.json();
-      setTable(data.table);
+      void queryClient.invalidateQueries({ queryKey: ["table-detail", catalogId, tableId] });
       onUpdated();
     } finally {
       setAiLoading(false);
@@ -114,7 +115,7 @@ export function TableDetailSheet({
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="right" className="w-full sm:max-w-lg">
-        {loading || !table ? (
+        {isLoading || !table ? (
           <SheetHeader>
             <SheetTitle>Loading...</SheetTitle>
           </SheetHeader>

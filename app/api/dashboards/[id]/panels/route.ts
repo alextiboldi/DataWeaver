@@ -25,17 +25,17 @@ export async function POST(
     );
   }
 
-  const dashboard = await prisma.dashboard.findUnique({ where: { id } });
+  const [dashboard, panelCount] = await Promise.all([
+    prisma.dashboard.findUnique({ where: { id } }),
+    prisma.dashboardPanel.count({ where: { dashboardId: id } }),
+  ]);
+
   if (!dashboard) {
     return NextResponse.json(
       { error: "Dashboard not found" },
       { status: 404 }
     );
   }
-
-  const panelCount = await prisma.dashboardPanel.count({
-    where: { dashboardId: id },
-  });
 
   const defaultLayout = body.layout ?? {
     x: (panelCount % 2) * 6,

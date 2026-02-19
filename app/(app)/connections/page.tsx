@@ -1,6 +1,6 @@
 "use client";
 
-import * as React from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ConnectionList } from "@/components/connections/connection-list";
 import { ConnectionForm } from "@/components/connections/connection-form";
 
@@ -13,22 +13,25 @@ interface DataSourceItem {
 }
 
 export default function ConnectionsPage() {
-  const [connections, setConnections] = React.useState<DataSourceItem[]>([]);
+  const queryClient = useQueryClient();
 
-  const loadConnections = React.useCallback(async () => {
-    const res = await fetch("/api/connections");
-    const data: { connections: DataSourceItem[] } = await res.json();
-    setConnections(data.connections);
-  }, []);
-
-  React.useEffect(() => {
-    loadConnections();
-  }, [loadConnections]);
+  const { data: connections = [] } = useQuery({
+    queryKey: ["connections"],
+    queryFn: async () => {
+      const res = await fetch("/api/connections");
+      const data: { connections: DataSourceItem[] } = await res.json();
+      return data.connections;
+    },
+  });
 
   return (
     <div className="p-6 max-w-2xl mx-auto space-y-6">
       <h1 className="text-2xl font-black uppercase tracking-tight">Data Connections</h1>
-      <ConnectionForm onConnectionAdded={loadConnections} />
+      <ConnectionForm
+        onConnectionAdded={() => {
+          void queryClient.invalidateQueries({ queryKey: ["connections"] });
+        }}
+      />
       <ConnectionList connections={connections} />
     </div>
   );

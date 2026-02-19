@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { useParams } from "next/navigation";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -41,24 +42,19 @@ interface CatalogDetail {
 
 export default function CatalogDetailPage() {
   const { id } = useParams<{ id: string }>();
-  const [catalog, setCatalog] = React.useState<CatalogDetail | null>(null);
-  const [loading, setLoading] = React.useState(true);
-  const [selectedTableId, setSelectedTableId] = React.useState<string | null>(
-    null,
-  );
+  const queryClient = useQueryClient();
+  const [selectedTableId, setSelectedTableId] = React.useState<string | null>(null);
   const [sheetOpen, setSheetOpen] = React.useState(false);
   const [aiAllLoading, setAiAllLoading] = React.useState(false);
 
-  const loadCatalog = React.useCallback(async () => {
-    const res = await fetch(`/api/catalog/${id}`);
-    const data: { catalog: CatalogDetail } = await res.json();
-    setCatalog(data.catalog);
-    setLoading(false);
-  }, [id]);
-
-  React.useEffect(() => {
-    loadCatalog();
-  }, [loadCatalog]);
+  const { data: catalog, isLoading } = useQuery({
+    queryKey: ["catalog", id],
+    queryFn: async () => {
+      const res = await fetch(`/api/catalog/${id}`);
+      const data: { catalog: CatalogDetail } = await res.json();
+      return data.catalog;
+    },
+  });
 
   const handleTableClick = (tableId: string) => {
     setSelectedTableId(tableId);
@@ -69,13 +65,17 @@ export default function CatalogDetailPage() {
     setAiAllLoading(true);
     try {
       await fetch(`/api/catalog/${id}/ai-document`, { method: "POST" });
-      await loadCatalog();
+      await queryClient.invalidateQueries({ queryKey: ["catalog", id] });
     } finally {
       setAiAllLoading(false);
     }
   };
 
-  if (loading) {
+  const handleUpdated = () => {
+    void queryClient.invalidateQueries({ queryKey: ["catalog", id] });
+  };
+
+  if (isLoading) {
     return (
       <div className="flex flex-col h-full p-6 gap-4">
         <Skeleton className="h-8 w-48" />
@@ -136,7 +136,7 @@ export default function CatalogDetailPage() {
         tableId={selectedTableId}
         open={sheetOpen}
         onOpenChange={setSheetOpen}
-        onUpdated={loadCatalog}
+        onUpdated={handleUpdated}
       />
     </div>
   );

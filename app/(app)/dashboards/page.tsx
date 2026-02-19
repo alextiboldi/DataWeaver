@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, LayoutDashboard, Trash2, Database } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -24,28 +25,25 @@ interface DashboardSummary {
 }
 
 export default function DashboardsPage(): React.ReactElement {
-  const [dashboards, setDashboards] = React.useState<DashboardSummary[]>([]);
-  const [isLoading, setIsLoading] = React.useState(true);
+  const queryClient = useQueryClient();
 
-  const fetchDashboards = React.useCallback(async () => {
-    setIsLoading(true);
-    try {
+  const { data: dashboards = [], isLoading } = useQuery({
+    queryKey: ["dashboards"],
+    queryFn: async () => {
       const res = await fetch("/api/dashboards");
       const json = (await res.json()) as { dashboards: DashboardSummary[] };
-      setDashboards(json.dashboards);
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
+      return json.dashboards;
+    },
+  });
 
-  React.useEffect(() => {
-    void fetchDashboards();
-  }, [fetchDashboards]);
-
-  async function handleDelete(id: string): Promise<void> {
-    await fetch(`/api/dashboards/${id}`, { method: "DELETE" });
-    await fetchDashboards();
-  }
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      await fetch(`/api/dashboards/${id}`, { method: "DELETE" });
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["dashboards"] });
+    },
+  });
 
   return (
     <div className="p-6">
@@ -100,7 +98,7 @@ export default function DashboardsPage(): React.ReactElement {
                 variant="ghost"
                 size="icon"
                 className="absolute right-2 top-2 opacity-0 group-hover:opacity-100 transition-opacity size-7"
-                onClick={() => void handleDelete(dashboard.id)}
+                onClick={() => deleteMutation.mutate(dashboard.id)}
               >
                 <Trash2 className="size-3" />
               </Button>

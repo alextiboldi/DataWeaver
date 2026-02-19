@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Database, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -27,21 +28,19 @@ interface ModelInfo {
 }
 
 export default function SemanticModelsPage() {
-  const [connections, setConnections] = React.useState<DataSourceItem[]>([]);
-  const [models, setModels] = React.useState<Record<string, ModelInfo>>({});
-  const [isLoading, setIsLoading] = React.useState(true);
+  const queryClient = useQueryClient();
   const [discovering, setDiscovering] = React.useState<string | null>(null);
 
-  const load = React.useCallback(async () => {
-    setIsLoading(true);
-    try {
+  const { data, isLoading } = useQuery({
+    queryKey: ["semantic-models"],
+    queryFn: async () => {
       const res = await fetch("/api/connections");
-      const data = (await res.json()) as { connections: DataSourceItem[] };
-      setConnections(data.connections);
+      const connData = (await res.json()) as { connections: DataSourceItem[] };
+      const connections = connData.connections;
 
       const modelMap: Record<string, ModelInfo> = {};
       await Promise.all(
-        data.connections.map(async (conn) => {
+        connections.map(async (conn) => {
           const mRes = await fetch(`/api/semantic/${conn.id}`);
           if (mRes.ok) {
             const mData = (await mRes.json()) as { model: SemanticModelResponse };
@@ -52,21 +51,19 @@ export default function SemanticModelsPage() {
           }
         }),
       );
-      setModels(modelMap);
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
 
-  React.useEffect(() => {
-    void load();
-  }, [load]);
+      return { connections, models: modelMap };
+    },
+  });
+
+  const connections = data?.connections ?? [];
+  const models = data?.models ?? {};
 
   async function handleDiscover(dataSourceId: string) {
     setDiscovering(dataSourceId);
     try {
       await fetch(`/api/semantic/${dataSourceId}/discover`, { method: "POST" });
-      await load();
+      await queryClient.invalidateQueries({ queryKey: ["semantic-models"] });
     } finally {
       setDiscovering(null);
     }

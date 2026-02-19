@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { useParams } from "next/navigation";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -24,40 +25,37 @@ interface DataSourceItem {
 
 export default function SemanticDetailPage() {
   const { dataSourceId } = useParams<{ dataSourceId: string }>();
-  const [dataSource, setDataSource] = React.useState<DataSourceItem | null>(null);
-  const [model, setModel] = React.useState<SemanticModelResponse | null>(null);
-  const [isLoading, setIsLoading] = React.useState(true);
+  const queryClient = useQueryClient();
   const [rediscovering, setRediscovering] = React.useState(false);
 
-  const load = React.useCallback(async () => {
-    setIsLoading(true);
-    try {
+  const { data, isLoading } = useQuery({
+    queryKey: ["semantic-model", dataSourceId],
+    queryFn: async () => {
       const [connRes, modelRes] = await Promise.all([
         fetch("/api/connections"),
         fetch(`/api/semantic/${dataSourceId}`),
       ]);
       const connData = (await connRes.json()) as { connections: DataSourceItem[] };
-      const ds = connData.connections.find((c) => c.id === dataSourceId);
-      if (ds) setDataSource(ds);
+      const dataSource = connData.connections.find((c) => c.id === dataSourceId) ?? null;
 
+      let model: SemanticModelResponse | null = null;
       if (modelRes.ok) {
         const mData = (await modelRes.json()) as { model: SemanticModelResponse };
-        setModel(mData.model);
+        model = mData.model;
       }
-    } finally {
-      setIsLoading(false);
-    }
-  }, [dataSourceId]);
 
-  React.useEffect(() => {
-    void load();
-  }, [load]);
+      return { dataSource, model };
+    },
+  });
+
+  const dataSource = data?.dataSource ?? null;
+  const model = data?.model ?? null;
 
   async function handleRediscover() {
     setRediscovering(true);
     try {
       await fetch(`/api/semantic/${dataSourceId}/discover`, { method: "POST" });
-      await load();
+      await queryClient.invalidateQueries({ queryKey: ["semantic-model", dataSourceId] });
     } finally {
       setRediscovering(false);
     }
@@ -133,7 +131,9 @@ export default function SemanticDetailPage() {
             <MetricList
               dataSourceId={dataSourceId}
               metrics={metrics}
-              onUpdate={() => void load()}
+              onUpdate={() => {
+                void queryClient.invalidateQueries({ queryKey: ["semantic-model", dataSourceId] });
+              }}
             />
           </TabsContent>
         </Tabs>

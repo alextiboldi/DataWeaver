@@ -1,6 +1,6 @@
 "use client";
 
-import * as React from "react";
+import { useQuery } from "@tanstack/react-query";
 import { CatalogCard } from "@/components/catalog/catalog-card";
 
 interface CatalogItem {
@@ -12,18 +12,14 @@ interface CatalogItem {
 }
 
 export default function CatalogPage() {
-  const [catalogs, setCatalogs] = React.useState<CatalogItem[]>([]);
-  const [loading, setLoading] = React.useState(true);
-
-  React.useEffect(() => {
-    async function load() {
+  const { data: catalogs, isLoading } = useQuery({
+    queryKey: ["catalogs"],
+    queryFn: async () => {
       const res = await fetch("/api/catalog");
       const data: { catalogs: CatalogItem[] } = await res.json();
-      setCatalogs(data.catalogs);
-      setLoading(false);
-    }
-    load();
-  }, []);
+      return data.catalogs;
+    },
+  });
 
   return (
     <div className="p-6 max-w-4xl mx-auto space-y-6">
@@ -33,7 +29,7 @@ export default function CatalogPage() {
           Document your databases to help the AI agent understand your data
         </p>
       </div>
-      {loading ? (
+      {isLoading ? (
         <div className="grid gap-4 md:grid-cols-2">
           {[1, 2].map((i) => (
             <div
@@ -42,7 +38,7 @@ export default function CatalogPage() {
             />
           ))}
         </div>
-      ) : catalogs.length === 0 ? (
+      ) : !catalogs || catalogs.length === 0 ? (
         <div className="text-center py-12 text-muted-foreground">
           <p>No catalogs yet.</p>
           <p className="text-sm mt-1">

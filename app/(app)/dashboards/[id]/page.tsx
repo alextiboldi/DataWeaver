@@ -3,6 +3,11 @@
 import * as React from "react";
 import { use } from "react";
 import Link from "next/link";
+import {
+  useQuery,
+  useMutation,
+  useQueryClient,
+} from "@tanstack/react-query";
 import type { LayoutItem } from "react-grid-layout";
 import type { UIMessage } from "ai";
 import { ArrowLeft, Database, GripVertical } from "lucide-react";
@@ -34,50 +39,130 @@ export default function DashboardDetailPage({
   params: Promise<{ id: string }>;
 }): React.ReactElement {
   const { id } = use(params);
-  const [dashboard, setDashboard] = React.useState<DashboardDetail | null>(null);
-  const [isLoading, setIsLoading] = React.useState(true);
-  const [error, setError] = React.useState<string | null>(null);
-  const [chatMessages, setChatMessages] = React.useState<UIMessage[]>([]);
-  const [isLoadingMessages, setIsLoadingMessages] = React.useState(true);
+  const queryClient = useQueryClient();
   const [sidebarWidth, setSidebarWidth] = React.useState(380);
   const isResizing = React.useRef(false);
 
-  const fetchMessages = React.useCallback(async () => {
-    setIsLoadingMessages(true);
-    try {
-      const res = await fetch(`/api/dashboards/${id}/messages`);
-      if (res.ok) {
-        const json = (await res.json()) as { messages: UIMessage[] };
-        setChatMessages(json.messages);
-      }
-    } catch {
-      // Chat history unavailable — start fresh
-    } finally {
-      setIsLoadingMessages(false);
-    }
-  }, [id]);
-
-  const fetchDashboard = React.useCallback(async () => {
-    setIsLoading(true);
-    try {
+  const { data: dashboard, isLoading, error } = useQuery({
+    queryKey: ["dashboard", id],
+    queryFn: async () => {
       const res = await fetch(`/api/dashboards/${id}`);
-      if (!res.ok) {
-        setError("Dashboard not found");
-        return;
-      }
+      if (!res.ok) throw new Error("Dashboard not found");
       const json = (await res.json()) as { dashboard: DashboardDetail };
-      setDashboard(json.dashboard);
-    } catch {
-      setError("Failed to load dashboard");
-    } finally {
-      setIsLoading(false);
-    }
-  }, [id]);
+      return json.dashboard;
+    },
+  });
 
-  React.useEffect(() => {
-    void fetchDashboard();
-    void fetchMessages();
-  }, [fetchDashboard, fetchMessages]);
+  const { data: chatMessages = [], isLoading: isLoadingMessages } = useQuery({
+    queryKey: ["dashboard-messages", id],
+    queryFn: async () => {
+      const res = await fetch(`/api/dashboards/${id}/messages`);
+      if (!res.ok) return [];
+      const json = (await res.json()) as { messages: UIMessage[] };
+      return json.messages;
+    },
+  });
+
+  const pinChartMutation = useMutation({
+    mutationFn: async (data: { chartType: string; sql: string; title: string }) => {
+      const panelCount = dashboard?.panels.length ?? 0;
+      const shortTitle = `${data.chartType.charAt(0).toUpperCase()}${data.chartType.slice(1)} ${panelCount + 1}`;
+      const res = await fetch(`/api/dashboards/${id}/panels`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          chartType: data.chartType,
+          sql: data.sql,
+          title: shortTitle,
+          description: data.title,
+        }),
+      });
+      if (!res.ok) throw new Error("Failed to pin chart");
+      return (await res.json()) as { panel: DashboardPanelData };
+    },
+    onSuccess: (result) => {
+      queryClient.setQueryData<DashboardDetail>(["dashboard", id], (prev) => {
+        if (!prev) return prev;
+        return { ...prev, panels: [...prev.panels, result.panel] };
+      });
+    },
+  });
+
+  const layoutMutation = useMutation({
+    mutationFn: async (layouts: LayoutItem[]) => {
+      if (!dashboard) return;
+      const updates = layouts.map(async (layout) => {
+        const panel = dashboard.panels.find((p) => p.id === layout.i);
+        if (!panel) return;
+        const newLayout = { x: layout.x, y: layout.y, w: layout.w, h: layout.h };
+        if (
+          panel.layout.x === newLayout.x &&
+          panel.layout.y === newLayout.y &&
+          panel.layout.w === newLayout.w &&
+          panel.layout.h === newLayout.h
+        ) return;
+        await fetch(`/api/dashboards/${id}/panels/${panel.id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ layout: newLayout }),
+        });
+      });
+      await Promise.all(updates);
+      return layouts;
+    },
+    onSuccess: (layouts) => {
+      if (!layouts) return;
+      queryClient.setQueryData<DashboardDetail>(["dashboard", id], (prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          panels: prev.panels.map((panel) => {
+            const layout = layouts.find((l) => l.i === panel.id);
+            if (!layout) return panel;
+            return {
+              ...panel,
+              layout: { x: layout.x, y: layout.y, w: layout.w, h: layout.h },
+            };
+          }),
+        };
+      });
+    },
+  });
+
+  const renameMutation = useMutation({
+    mutationFn: async ({ panelId, title }: { panelId: string; title: string }) => {
+      await fetch(`/api/dashboards/${id}/panels/${panelId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title }),
+      });
+      return { panelId, title };
+    },
+    onSuccess: ({ panelId, title }) => {
+      queryClient.setQueryData<DashboardDetail>(["dashboard", id], (prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          panels: prev.panels.map((p) =>
+            p.id === panelId ? { ...p, title } : p
+          ),
+        };
+      });
+    },
+  });
+
+  const removeMutation = useMutation({
+    mutationFn: async (panelId: string) => {
+      await fetch(`/api/dashboards/${id}/panels/${panelId}`, { method: "DELETE" });
+      return panelId;
+    },
+    onSuccess: (panelId) => {
+      queryClient.setQueryData<DashboardDetail>(["dashboard", id], (prev) => {
+        if (!prev) return prev;
+        return { ...prev, panels: prev.panels.filter((p) => p.id !== panelId) };
+      });
+    },
+  });
 
   const handleMouseDown = React.useCallback(() => {
     isResizing.current = true;
@@ -102,98 +187,6 @@ export default function DashboardDetailPage({
     document.addEventListener("mouseup", onMouseUp);
   }, []);
 
-  async function handlePinChart(data: {
-    chartType: string;
-    sql: string;
-    title: string;
-  }): Promise<void> {
-    if (!data.sql || !data.chartType) return;
-    const panelCount = dashboard?.panels.length ?? 0;
-    const shortTitle = `${data.chartType.charAt(0).toUpperCase()}${data.chartType.slice(1)} ${panelCount + 1}`;
-    const res = await fetch(`/api/dashboards/${id}/panels`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        chartType: data.chartType,
-        sql: data.sql,
-        title: shortTitle,
-        description: data.title,
-      }),
-    });
-    if (!res.ok) return;
-    const json = (await res.json()) as { panel: DashboardPanelData };
-    setDashboard((prev) => {
-      if (!prev) return prev;
-      return { ...prev, panels: [...prev.panels, json.panel] };
-    });
-  }
-
-  async function handleLayoutChange(layouts: LayoutItem[]): Promise<void> {
-    if (!dashboard) return;
-
-    const updates = layouts.map(async (layout) => {
-      const panel = dashboard.panels.find((p) => p.id === layout.i);
-      if (!panel) return;
-
-      const newLayout = { x: layout.x, y: layout.y, w: layout.w, h: layout.h };
-      if (
-        panel.layout.x === newLayout.x &&
-        panel.layout.y === newLayout.y &&
-        panel.layout.w === newLayout.w &&
-        panel.layout.h === newLayout.h
-      )
-        return;
-
-      await fetch(`/api/dashboards/${id}/panels/${panel.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ layout: newLayout }),
-      });
-    });
-
-    await Promise.all(updates);
-
-    setDashboard((prev) => {
-      if (!prev) return prev;
-      return {
-        ...prev,
-        panels: prev.panels.map((panel) => {
-          const layout = layouts.find((l) => l.i === panel.id);
-          if (!layout) return panel;
-          return {
-            ...panel,
-            layout: { x: layout.x, y: layout.y, w: layout.w, h: layout.h },
-          };
-        }),
-      };
-    });
-  }
-
-  async function handleRenamePanel(panelId: string, title: string): Promise<void> {
-    await fetch(`/api/dashboards/${id}/panels/${panelId}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title }),
-    });
-    setDashboard((prev) => {
-      if (!prev) return prev;
-      return {
-        ...prev,
-        panels: prev.panels.map((p) =>
-          p.id === panelId ? { ...p, title } : p
-        ),
-      };
-    });
-  }
-
-  async function handleRemovePanel(panelId: string): Promise<void> {
-    await fetch(`/api/dashboards/${id}/panels/${panelId}`, { method: "DELETE" });
-    setDashboard((prev) => {
-      if (!prev) return prev;
-      return { ...prev, panels: prev.panels.filter((p) => p.id !== panelId) };
-    });
-  }
-
   if (isLoading) {
     return (
       <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
@@ -205,7 +198,7 @@ export default function DashboardDetailPage({
   if (error || !dashboard) {
     return (
       <div className="flex h-full flex-col items-center justify-center gap-4">
-        <p className="text-sm text-destructive">{error ?? "Not found"}</p>
+        <p className="text-sm text-destructive">{error instanceof Error ? error.message : "Not found"}</p>
         <Button asChild variant="outline">
           <Link href="/dashboards">Back to Dashboards</Link>
         </Button>
@@ -245,7 +238,7 @@ export default function DashboardDetailPage({
             dashboardId={id}
             initialMessages={chatMessages.length > 0 ? chatMessages : undefined}
             isLoadingMessages={isLoadingMessages}
-            onPinChart={(data) => void handlePinChart(data)}
+            onPinChart={(data) => pinChartMutation.mutate(data)}
           />
         </div>
 
@@ -269,9 +262,9 @@ export default function DashboardDetailPage({
             <DashboardCanvas
               panels={dashboard.panels}
               dataSourceId={dashboard.dataSourceId ?? undefined}
-              onLayoutChange={(layouts) => void handleLayoutChange(layouts)}
-              onRemovePanel={(panelId) => void handleRemovePanel(panelId)}
-              onRenamePanel={(panelId, title) => void handleRenamePanel(panelId, title)}
+              onLayoutChange={(layouts) => layoutMutation.mutate(layouts)}
+              onRemovePanel={(panelId) => removeMutation.mutate(panelId)}
+              onRenamePanel={(panelId, title) => renameMutation.mutate({ panelId, title })}
             />
           )}
         </div>

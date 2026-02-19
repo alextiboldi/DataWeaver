@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
+import { useQuery } from "@tanstack/react-query";
 import { Plus, Database, Check, ArrowLeft, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -34,13 +35,30 @@ export function CreateDashboardDialog({
   const [step, setStep] = React.useState<1 | 2>(1);
   const [title, setTitle] = React.useState("");
   const [selectedSourceId, setSelectedSourceId] = React.useState<string | null>(null);
-  const [dataSources, setDataSources] = React.useState<DataSourceOption[]>([]);
-  const [isLoadingSources, setIsLoadingSources] = React.useState(false);
   const [showNewConnection, setShowNewConnection] = React.useState(false);
   const [newConnName, setNewConnName] = React.useState("");
   const [newConnUri, setNewConnUri] = React.useState("");
   const [isCreatingConn, setIsCreatingConn] = React.useState(false);
   const [isCreating, setIsCreating] = React.useState(false);
+  const [localSources, setLocalSources] = React.useState<DataSourceOption[]>([]);
+
+  const { data: fetchedSources, isLoading: isLoadingSources } = useQuery({
+    queryKey: ["connections"],
+    queryFn: async () => {
+      const res = await fetch("/api/connections");
+      const json = (await res.json()) as { connections: DataSourceOption[] };
+      return json.connections;
+    },
+    enabled: step === 2,
+  });
+
+  const dataSources = localSources.length > 0 ? localSources : (fetchedSources ?? []);
+
+  React.useEffect(() => {
+    if (fetchedSources) {
+      setLocalSources(fetchedSources);
+    }
+  }, [fetchedSources]);
 
   function reset(): void {
     setStep(1);
@@ -49,23 +67,12 @@ export function CreateDashboardDialog({
     setShowNewConnection(false);
     setNewConnName("");
     setNewConnUri("");
-  }
-
-  async function fetchDataSources(): Promise<void> {
-    setIsLoadingSources(true);
-    try {
-      const res = await fetch("/api/connections");
-      const json = (await res.json()) as { connections: DataSourceOption[] };
-      setDataSources(json.connections);
-    } finally {
-      setIsLoadingSources(false);
-    }
+    setLocalSources([]);
   }
 
   function handleNext(): void {
     if (!title.trim()) return;
     setStep(2);
-    void fetchDataSources();
   }
 
   async function handleCreateConnection(): Promise<void> {
@@ -79,7 +86,7 @@ export function CreateDashboardDialog({
       });
       if (res.ok) {
         const json = (await res.json()) as { connection: DataSourceOption };
-        setDataSources((prev) => [json.connection, ...prev]);
+        setLocalSources((prev) => [json.connection, ...prev]);
         setSelectedSourceId(json.connection.id);
         setShowNewConnection(false);
         setNewConnName("");
