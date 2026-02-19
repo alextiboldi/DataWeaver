@@ -3,14 +3,19 @@
 import * as React from "react";
 import {
   ReactFlow,
+  ReactFlowProvider,
   Background,
   Controls,
   MiniMap,
+  useNodesState,
+  useReactFlow,
   type Node,
   type Edge,
+  type NodeChange,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import { TableNode, type TableNodeData } from "./table-node";
+import type { ErdLayout } from "@/lib/types/api";
 
 interface TableData {
   id: string;
@@ -33,6 +38,8 @@ interface TableData {
 interface ErdCanvasProps {
   tables: TableData[];
   onTableClick: (tableId: string) => void;
+  erdLayout: ErdLayout | null;
+  catalogId: string;
 }
 
 const nodeTypes = { table: TableNode };
@@ -42,8 +49,12 @@ const NODE_WIDTH = 280;
 const NODE_GAP_X = 80;
 const NODE_GAP_Y = 40;
 
-function layoutNodes(tables: TableData[]): Node[] {
+function buildInitialNodes(
+  tables: TableData[],
+  erdLayout: ErdLayout | null,
+): Node[] {
   return tables.map((table, i) => {
+    const saved = erdLayout?.[table.id];
     const col = i % GRID_COLS;
     const row = Math.floor(i / GRID_COLS);
     const estimatedHeight = 60 + Math.min(table.columns.length, 8) * 22 + 10;
@@ -51,10 +62,13 @@ function layoutNodes(tables: TableData[]): Node[] {
     return {
       id: table.id,
       type: "table",
-      position: {
-        x: col * (NODE_WIDTH + NODE_GAP_X),
-        y: row * (estimatedHeight + NODE_GAP_Y),
-      },
+      position: saved
+        ? { x: saved.x, y: saved.y }
+        : {
+            x: col * (NODE_WIDTH + NODE_GAP_X),
+            y: row * (estimatedHeight + NODE_GAP_Y),
+          },
+      ...(saved ? { width: saved.w, height: saved.h } : {}),
       data: {
         label: table.tableName,
         displayName: table.displayName,
@@ -81,8 +95,14 @@ function buildEdges(tables: TableData[]): Edge[] {
             target: targetId,
             label: col.columnName,
             type: "default",
-            style: { stroke: "hsl(var(--muted-foreground))", strokeWidth: 1.5 },
-            labelStyle: { fontSize: 10, fill: "hsl(var(--muted-foreground))" },
+            style: {
+              stroke: "hsl(var(--muted-foreground))",
+              strokeWidth: 1.5,
+            },
+            labelStyle: {
+              fontSize: 10,
+              fill: "hsl(var(--muted-foreground))",
+            },
           });
         }
       }
@@ -92,9 +112,67 @@ function buildEdges(tables: TableData[]): Edge[] {
   return edges;
 }
 
-export function ErdCanvas({ tables, onTableClick }: ErdCanvasProps) {
-  const nodes = React.useMemo(() => layoutNodes(tables), [tables]);
+function ErdCanvasInner({
+  tables,
+  onTableClick,
+  erdLayout,
+  catalogId,
+}: ErdCanvasProps) {
+  const [nodes, setNodes, onNodesChange] = useNodesState(
+    buildInitialNodes(tables, erdLayout),
+  );
   const edges = React.useMemo(() => buildEdges(tables), [tables]);
+  const { getNodes } = useReactFlow();
+  const saveTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const saveLayout = React.useCallback(() => {
+    const currentNodes = getNodes();
+    const layout: ErdLayout = {};
+    for (const node of currentNodes) {
+      layout[node.id] = {
+        x: node.position.x,
+        y: node.position.y,
+        w: node.measured?.width ?? node.width ?? NODE_WIDTH,
+        h:
+          node.measured?.height ??
+          node.height ??
+          60 + 8 * 22 + 10,
+      };
+    }
+
+    fetch(`/api/catalog/${catalogId}/layout`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ layout }),
+    });
+  }, [getNodes, catalogId]);
+
+  const debouncedSave = React.useCallback(() => {
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    saveTimerRef.current = setTimeout(saveLayout, 500);
+  }, [saveLayout]);
+
+  React.useEffect(() => {
+    return () => {
+      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    };
+  }, []);
+
+  const handleNodesChange = React.useCallback(
+    (changes: NodeChange[]) => {
+      onNodesChange(changes);
+
+      const shouldSave = changes.some(
+        (c) =>
+          (c.type === "position" && !c.dragging) ||
+          (c.type === "dimensions" && c.resizing === false),
+      );
+      if (shouldSave) {
+        debouncedSave();
+      }
+    },
+    [onNodesChange, debouncedSave],
+  );
 
   const handleNodeClick = React.useCallback(
     (_: React.MouseEvent, node: Node) => {
@@ -109,8 +187,8 @@ export function ErdCanvas({ tables, onTableClick }: ErdCanvasProps) {
         nodes={nodes}
         edges={edges}
         nodeTypes={nodeTypes}
+        onNodesChange={handleNodesChange}
         onNodeClick={handleNodeClick}
-        nodesDraggable={false}
         nodesConnectable={false}
         fitView
         fitViewOptions={{ padding: 0.2 }}
@@ -125,5 +203,13 @@ export function ErdCanvas({ tables, onTableClick }: ErdCanvasProps) {
         />
       </ReactFlow>
     </div>
+  );
+}
+
+export function ErdCanvas(props: ErdCanvasProps) {
+  return (
+    <ReactFlowProvider>
+      <ErdCanvasInner {...props} />
+    </ReactFlowProvider>
   );
 }

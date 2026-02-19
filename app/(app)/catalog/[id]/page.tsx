@@ -6,6 +6,7 @@ import { Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ErdCanvas } from "@/components/catalog/erd-canvas";
+import type { ErdLayout } from "@/lib/types/api";
 import { TableDetailSheet } from "@/components/catalog/table-detail-sheet";
 
 interface Column {
@@ -34,6 +35,7 @@ interface CatalogDetail {
   id: string;
   name: string;
   description: string | null;
+  erdLayout: ErdLayout | null;
   tables: TableData[];
 }
 
@@ -121,7 +123,12 @@ export default function CatalogDetailPage() {
       </div>
 
       <div className="flex-1 min-h-0">
-        <ErdCanvas tables={catalog.tables} onTableClick={handleTableClick} />
+        <ErdCanvas
+          tables={catalog.tables}
+          onTableClick={handleTableClick}
+          erdLayout={catalog.erdLayout}
+          catalogId={id}
+        />
       </div>
 
       <TableDetailSheet

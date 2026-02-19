@@ -133,6 +133,7 @@ model DatabaseDoc {
   fingerprint String   @unique
   name        String
   description String?
+  erdLayout   Json?    // { [tableDocId]: { x, y, w, h } }
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 

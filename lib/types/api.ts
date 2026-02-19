@@ -89,6 +89,27 @@ export interface DiscoveryResponse {
   columnsFound: number;
 }
 
+// ERD Layout
+export interface ErdLayoutEntry {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
+
+export type ErdLayout = Record<string, ErdLayoutEntry>;
+
+export const erdLayoutEntrySchema = z.object({
+  x: z.number(),
+  y: z.number(),
+  w: z.number(),
+  h: z.number(),
+});
+
+export const updateErdLayoutSchema = z.object({
+  layout: z.record(z.string(), erdLayoutEntrySchema),
+});
+
 // Catalog API
 export const discoverCatalogSchema = z.object({
   dataSourceId: z.string().min(1),
