@@ -2,29 +2,34 @@
 
 import * as React from "react";
 import { useChat } from "@ai-sdk/react";
-import { DefaultChatTransport } from "ai";
+import { DefaultChatTransport, type UIMessage } from "ai";
 
 import { ChatInput } from "./chat-input";
 import { MessageList } from "./message-list";
 
 interface ChatPanelProps {
-  dataSourceId?: string;
+  dashboardId: string;
+  initialMessages?: UIMessage[];
+  isLoadingMessages?: boolean;
   onPinChart?: (data: { chartType: string; sql: string; title: string }) => void;
 }
 
-export function ChatPanel({ dataSourceId, onPinChart }: ChatPanelProps): React.ReactElement {
+export function ChatPanel({ dashboardId, initialMessages, isLoadingMessages, onPinChart }: ChatPanelProps): React.ReactElement {
   const [input, setInput] = React.useState("");
 
   const transport = React.useMemo(
     () =>
       new DefaultChatTransport({
         api: "/api/chat",
-        body: dataSourceId ? { dataSourceId } : undefined,
+        body: { dashboardId },
       }),
-    [dataSourceId]
+    [dashboardId]
   );
 
-  const { messages, sendMessage, status } = useChat({ transport });
+  const { messages, sendMessage, status } = useChat({
+    transport,
+    messages: initialMessages,
+  });
 
   const isLoading = status === "submitted" || status === "streaming";
 
@@ -34,6 +39,14 @@ export function ChatPanel({ dataSourceId, onPinChart }: ChatPanelProps): React.R
     if (!trimmed || isLoading) return;
     setInput("");
     await sendMessage({ text: trimmed });
+  }
+
+  if (isLoadingMessages) {
+    return (
+      <div className="flex h-full items-center justify-center">
+        <p className="text-sm text-muted-foreground">Loading messages...</p>
+      </div>
+    );
   }
 
   return (

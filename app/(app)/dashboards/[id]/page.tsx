@@ -4,6 +4,7 @@ import * as React from "react";
 import { use } from "react";
 import Link from "next/link";
 import type { LayoutItem } from "react-grid-layout";
+import type { UIMessage } from "ai";
 import { ArrowLeft, Database, GripVertical } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -36,8 +37,25 @@ export default function DashboardDetailPage({
   const [dashboard, setDashboard] = React.useState<DashboardDetail | null>(null);
   const [isLoading, setIsLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
+  const [chatMessages, setChatMessages] = React.useState<UIMessage[]>([]);
+  const [isLoadingMessages, setIsLoadingMessages] = React.useState(true);
   const [sidebarWidth, setSidebarWidth] = React.useState(380);
   const isResizing = React.useRef(false);
+
+  const fetchMessages = React.useCallback(async () => {
+    setIsLoadingMessages(true);
+    try {
+      const res = await fetch(`/api/dashboards/${id}/messages`);
+      if (res.ok) {
+        const json = (await res.json()) as { messages: UIMessage[] };
+        setChatMessages(json.messages);
+      }
+    } catch {
+      // Chat history unavailable — start fresh
+    } finally {
+      setIsLoadingMessages(false);
+    }
+  }, [id]);
 
   const fetchDashboard = React.useCallback(async () => {
     setIsLoading(true);
@@ -58,7 +76,8 @@ export default function DashboardDetailPage({
 
   React.useEffect(() => {
     void fetchDashboard();
-  }, [fetchDashboard]);
+    void fetchMessages();
+  }, [fetchDashboard, fetchMessages]);
 
   const handleMouseDown = React.useCallback(() => {
     isResizing.current = true;
@@ -223,7 +242,9 @@ export default function DashboardDetailPage({
           style={{ width: sidebarWidth, minWidth: 280, maxWidth: 500 }}
         >
           <ChatPanel
-            dataSourceId={dashboard.dataSourceId ?? undefined}
+            dashboardId={id}
+            initialMessages={chatMessages.length > 0 ? chatMessages : undefined}
+            isLoadingMessages={isLoadingMessages}
             onPinChart={(data) => void handlePinChart(data)}
           />
         </div>

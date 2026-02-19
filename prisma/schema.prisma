@@ -81,7 +81,8 @@ model Conversation {
   userId String?
   user   User?   @relation(fields: [userId], references: [id])
 
-  messages Message[]
+  messages  Message[]
+  dashboard Dashboard?
 }
 
 model Message {
@@ -107,6 +108,9 @@ model Dashboard {
 
   dataSourceId String?
   dataSource   DataSource? @relation(fields: [dataSourceId], references: [id])
+
+  conversationId String?       @unique
+  conversation   Conversation? @relation(fields: [conversationId], references: [id])
 
   panels DashboardPanel[]
 }
