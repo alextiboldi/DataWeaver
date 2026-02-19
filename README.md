@@ -19,12 +19,8 @@ DataWeaver is a data exploration and AI-assisted analytics platform. It connects
 - [Tech Stack](#tech-stack)
 - [Prerequisites](#prerequisites)
 - [Getting Started](#getting-started)
-  - [1. Clone the Repository](#1-clone-the-repository)
-  - [2. Install Dependencies](#2-install-dependencies)
-  - [3. Start Infrastructure](#3-start-infrastructure)
-  - [4. Configure Environment Variables](#4-configure-environment-variables)
-  - [5. Initialize the Database](#5-initialize-the-database)
-  - [6. Start the Development Server](#6-start-the-development-server)
+  - [Quick Start with Docker](#quick-start-with-docker-no-nodejs-required)
+  - [Local Development Setup](#local-development-setup)
 - [Architecture](#architecture)
   - [Directory Structure](#directory-structure)
   - [Request Lifecycle](#request-lifecycle)
@@ -78,7 +74,14 @@ DataWeaver is a data exploration and AI-assisted analytics platform. It connects
 
 ## Prerequisites
 
-Before you begin, make sure you have the following installed:
+There are two ways to run DataWeaver: **Docker-only** (no Node.js required) or **local development** (Node.js + Docker for infrastructure).
+
+### Docker-Only (Recommended for Running)
+
+- **Docker** and **Docker Compose**
+- **A Google Cloud API key** with the Generative AI API enabled (for AI chat and AI documentation features)
+
+### Local Development
 
 - **Node.js** 20 or higher
 - **pnpm** (install via `npm install -g pnpm` or `corepack enable`)
@@ -90,14 +93,76 @@ Before you begin, make sure you have the following installed:
 
 ## Getting Started
 
-### 1. Clone the Repository
+### Quick Start with Docker (No Node.js Required)
+
+Run the entire application stack -- app, databases, and toolbox server -- with a single command. No Node.js or pnpm installation needed.
+
+1. **Clone the repository:**
+
+   ```bash
+   git clone https://github.com/your-username/DataWeaver.git
+   cd DataWeaver
+   ```
+
+2. **Set your Google AI API key:**
+
+   ```bash
+   export GOOGLE_GENERATIVE_AI_API_KEY=your-google-api-key
+   ```
+
+   Optionally, you can also set a custom auth secret (a default is provided for development):
+
+   ```bash
+   export NEXTAUTH_SECRET=$(openssl rand -base64 32)
+   ```
+
+3. **Start everything:**
+
+   ```bash
+   docker compose up -d
+   ```
+
+   This builds the DataWeaver image (first run takes a few minutes) and starts all four services:
+
+   | Service | Port | Purpose |
+   |---------|------|---------|
+   | `dataweaver` | 3000 | The DataWeaver application |
+   | `dataweaver-db` | 5432 | Application database (stores users, connections, dashboards, catalog, etc.) |
+   | `pg-sample-db` | 5433 | Sample database with customers, products, and orders data for demo/testing |
+   | `toolbox` | 5050 | Google Database Toolbox server that proxies SQL queries to the sample database |
+
+   Database migrations run automatically on container startup. The sample database is seeded with 10 customers, 10 products, and 500 randomized orders.
+
+4. **Open the app:**
+
+   Navigate to [http://localhost:3000](http://localhost:3000). Click **Get Started** or go to `/auth/signup` to create an account.
+
+To stop everything:
+
+```bash
+docker compose down
+```
+
+To stop and remove all data (databases, volumes):
+
+```bash
+docker compose down -v
+```
+
+---
+
+### Local Development Setup
+
+For active development with hot-reload, run the app locally with Node.js while using Docker for infrastructure.
+
+#### 1. Clone the Repository
 
 ```bash
 git clone https://github.com/your-username/DataWeaver.git
 cd DataWeaver
 ```
 
-### 2. Install Dependencies
+#### 2. Install Dependencies
 
 ```bash
 pnpm install
@@ -105,21 +170,19 @@ pnpm install
 
 This installs all Node.js dependencies and builds the Prisma engine binaries.
 
-### 3. Start Infrastructure
+#### 3. Start Infrastructure
 
-DataWeaver requires three Docker services:
+Start the databases and toolbox server (without the app):
+
+```bash
+docker compose up -d dataweaver-db pg-sample-db toolbox
+```
 
 | Service | Port | Purpose |
 |---------|------|---------|
 | `dataweaver-db` | 5432 | Application database (stores users, connections, dashboards, catalog, etc.) |
 | `pg-sample-db` | 5433 | Sample database with customers, products, and orders data for demo/testing |
 | `toolbox` | 5050 | Google Database Toolbox server that proxies SQL queries to the sample database |
-
-Start all three:
-
-```bash
-docker compose up -d
-```
 
 Verify they are running:
 
@@ -129,7 +192,7 @@ docker compose ps
 
 You should see all three services listed as healthy/running. The sample database is automatically seeded with 10 customers, 10 products, and 500 randomized orders via `tooling/sample-db/init.sql`.
 
-### 4. Configure Environment Variables
+#### 4. Configure Environment Variables
 
 Create a `.env` file in the project root:
 
@@ -164,7 +227,7 @@ To generate an `AUTH_SECRET`, run:
 openssl rand -base64 32
 ```
 
-### 5. Initialize the Database
+#### 5. Initialize the Database
 
 Run the Prisma migration to create all application tables:
 
@@ -180,7 +243,7 @@ Optionally, seed the database:
 pnpm db:seed
 ```
 
-### 6. Start the Development Server
+#### 6. Start the Development Server
 
 ```bash
 pnpm dev
@@ -280,7 +343,10 @@ DataWeaver/
 │   └── toolbox-server/tools.yaml # Toolbox tool definitions (execute-sql, list-tables, etc.)
 ├── generated/prisma/             # Generated Prisma client (gitignored)
 ├── public/                       # Static assets (SVGs)
-├── docker-compose.yml            # PostgreSQL (x2) + Toolbox server
+├── Dockerfile                    # Multi-stage Docker build (standalone Next.js)
+├── docker-compose.yml            # Full stack: app + PostgreSQL (x2) + Toolbox server
+├── docker-entrypoint.sh          # Container entrypoint (runs migrations, then starts app)
+├── .dockerignore                 # Docker build context exclusions
 ├── prisma.config.ts              # Prisma config (datasource URL from env)
 ├── middleware.ts                  # NextAuth middleware (protects all routes except auth/landing)
 ├── next.config.ts                # Next.js config
@@ -680,9 +746,13 @@ ColumnDoc
 | `pnpm db:push` | Push the Prisma schema to the database without creating a migration |
 | `pnpm db:studio` | Open Prisma Studio GUI at [http://localhost:5555](http://localhost:5555) |
 | `pnpm db:seed` | Seed the application database (runs `prisma/seed.ts` via tsx) |
-| `docker compose up -d` | Start PostgreSQL (x2) and the Toolbox server |
+| `docker compose up -d` | Start the full stack: app, PostgreSQL (x2), and Toolbox server |
+| `docker compose up -d dataweaver-db pg-sample-db toolbox` | Start only infrastructure (for local dev) |
 | `docker compose down` | Stop all Docker services |
+| `docker compose down -v` | Stop all services and delete data volumes |
 | `docker compose ps` | Check status of Docker services |
+| `docker compose logs dataweaver` | View app container logs |
+| `docker compose build dataweaver` | Rebuild the app image (after code changes) |
 
 ---
 
@@ -726,7 +796,25 @@ DataWeaver is a Next.js application and deploys naturally to Vercel:
 
 ### Docker
 
-Build and run the application in Docker:
+The `docker-compose.yml` includes the full stack -- the DataWeaver app, both PostgreSQL databases, and the toolbox server. This is the easiest way to deploy.
+
+**Full stack with Docker Compose:**
+
+```bash
+# Set required secrets
+export GOOGLE_GENERATIVE_AI_API_KEY=your-key
+export NEXTAUTH_SECRET=$(openssl rand -base64 32)
+
+# Start everything
+docker compose up -d
+```
+
+The `dataweaver` service automatically:
+- Builds a production-optimized image using a multi-stage Dockerfile
+- Runs Prisma migrations on startup via `docker-entrypoint.sh`
+- Connects to the databases and toolbox using internal Docker networking
+
+**Standalone image (without Compose):**
 
 ```bash
 # Build the image
@@ -734,14 +822,23 @@ docker build -t dataweaver .
 
 # Run with environment variables
 docker run -p 3000:3000 \
-  -e DATABASE_URL=postgresql://... \
-  -e AUTH_SECRET=... \
-  -e GOOGLE_GENERATIVE_AI_API_KEY=... \
-  -e TOOLBOX_URL=http://toolbox:5050 \
+  -e DATABASE_URL=postgresql://user:pass@your-db-host:5432/dataweaver \
+  -e NEXTAUTH_SECRET=your-secret \
+  -e NEXTAUTH_URL=http://localhost:3000 \
+  -e GOOGLE_GENERATIVE_AI_API_KEY=your-key \
+  -e TOOLBOX_URL=http://your-toolbox-host:5050 \
   dataweaver
 ```
 
-Or use docker-compose for the full stack including the application, both databases, and the toolbox server.
+**Environment variables for Docker:**
+
+When using Docker Compose, most variables are pre-configured with internal Docker networking (e.g., `DATABASE_URL` points to `dataweaver-db` instead of `localhost`). You only need to provide:
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `GOOGLE_GENERATIVE_AI_API_KEY` | Yes | Google AI API key for chat and AI documentation |
+| `NEXTAUTH_SECRET` | No | Auth secret (defaults to a development value) |
+| `FEATURE_SEMANTIC_LAYER` | No | Enable semantic layer features (defaults to `false`) |
 
 ### Production Checklist
 

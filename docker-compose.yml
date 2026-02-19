@@ -43,6 +43,23 @@ services:
       pg-sample-db:
         condition: service_healthy
 
+  dataweaver:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      DATABASE_URL: "postgresql://dataweaver:dataweaverpass@dataweaver-db:5432/dataweaver"
+      TOOLBOX_URL: "http://toolbox:5000"
+      NEXTAUTH_URL: "http://localhost:3000"
+      NEXTAUTH_SECRET: "${NEXTAUTH_SECRET:-development-secret-change-in-production}"
+      GOOGLE_GENERATIVE_AI_API_KEY: "${GOOGLE_GENERATIVE_AI_API_KEY}"
+      FEATURE_SEMANTIC_LAYER: "${FEATURE_SEMANTIC_LAYER:-false}"
+    depends_on:
+      dataweaver-db:
+        condition: service_healthy
+      toolbox:
+        condition: service_started
+
 volumes:
   pgdata-app:
   pgdata-sample:
