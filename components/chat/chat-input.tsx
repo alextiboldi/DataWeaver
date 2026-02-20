@@ -32,12 +32,13 @@ export function ChatInput({
         value={input}
         onChange={(e) => onInputChange(e.target.value)}
         onKeyDown={handleKeyDown}
-        placeholder="Ask a question about your data..."
+        placeholder="Ask a question about your data\u2026"
+        aria-label="Ask a question about your data"
         className="min-h-[44px] max-h-[200px] resize-none"
         rows={1}
         disabled={isLoading}
       />
-      <Button type="submit" size="icon" disabled={isLoading || !input.trim()}>
+      <Button type="submit" size="icon" disabled={isLoading || !input.trim()} aria-label="Send message">
         <Send className="size-4" />
       </Button>
     </form>

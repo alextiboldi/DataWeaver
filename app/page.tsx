@@ -1,6 +1,6 @@
 "use client"
 
-import { motion } from "framer-motion"
+import { motion, useReducedMotion } from "framer-motion"
 import { ArrowDownLeft, Disc, Grid, Terminal, LayoutList, Hexagon, Zap, Layers, Github, ExternalLink } from "lucide-react"
 import Link from "next/link"
 import { ComponentCarousel } from "@/components/landing/component-carousel"
@@ -31,6 +31,7 @@ const DATABASES = [
 ]
 
 export default function LandingPage() {
+    const prefersReducedMotion = useReducedMotion()
     return (
         <div className="min-h-screen bg-neutral-100 text-black font-mono selection:bg-black selection:text-white">
             {/* Grid Background */}
@@ -42,14 +43,14 @@ export default function LandingPage() {
             <header className="fixed top-0 w-full z-50 border-b-2 border-black bg-white/80 backdrop-blur-sm">
                 <div className="flex justify-between items-center h-16 px-6">
                     <div className="text-2xl font-black uppercase tracking-tighter flex gap-2">
-                        <Hexagon className="w-8 h-8 fill-black text-white stroke-2" />
+                        <Hexagon aria-hidden="true" className="w-8 h-8 fill-black text-white stroke-2" />
                         DataWeaver
                     </div>
-                    <nav className="hidden md:flex gap-8 text-sm font-bold uppercase tracking-widest text-black items-center">
+                    <nav aria-label="Main navigation" className="hidden md:flex gap-8 text-sm font-bold uppercase tracking-widest text-black items-center">
                         <a href="#features" className="hover:underline decoration-2 underline-offset-4 decoration-black">Features</a>
                         <a href="#databases" className="hover:underline decoration-2 underline-offset-4 decoration-black">Databases</a>
                         <a href="https://github.com/alextiboldi/DataWeaver" target="_blank" rel="noopener noreferrer" className="hover:underline decoration-2 underline-offset-4 decoration-black flex items-center gap-1">
-                            <Github className="w-4 h-4" /> GitHub
+                            <Github aria-hidden="true" className="w-4 h-4" /> GitHub
                         </a>
                         <Link href="/auth/signin" className="bg-black text-white px-4 py-1 hover:bg-neutral-800 transition-colors border-2 border-black">Login</Link>
                     </nav>
@@ -60,11 +61,11 @@ export default function LandingPage() {
             <main className="relative z-10 pt-32 px-6 pb-20 border-b-2 border-black bg-white">
                 <div className="max-w-7xl mx-auto">
                     <motion.div
-                        initial={{ opacity: 0, y: 50 }}
+                        initial={prefersReducedMotion ? false : { opacity: 0, y: 50 }}
                         animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.5, ease: "circOut" }}
+                        transition={{ duration: prefersReducedMotion ? 0 : 0.5, ease: "circOut" }}
                     >
-                        <h1 className="text-[12vw] leading-[0.85] font-black uppercase tracking-tighter mb-12 mix-blend-multiply text-black">
+                        <h1 className="text-[12vw] leading-[0.85] font-black uppercase tracking-tighter mb-12 mix-blend-multiply text-black text-balance">
                             Raw Data<br />
                             <span className="text-transparent bg-clip-text bg-gradient-to-b from-black to-neutral-500 stroke-text-black">To Insight.</span>
                         </h1>
@@ -76,7 +77,7 @@ export default function LandingPage() {
                                 Chat with your database. Build customisable dashboards.
                                 Connect any data source and let AI do the heavy lifting.
                             </p>
-                            <Link href="/auth/signin" className="group relative inline-flex px-8 py-4 bg-black text-white font-bold text-lg uppercase tracking-wider overflow-hidden border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all">
+                            <Link href="/auth/signin" className="group relative inline-flex px-8 py-4 bg-black text-white font-bold text-lg uppercase tracking-wider overflow-hidden border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-[transform,box-shadow]">
                                 <span className="relative z-10 flex items-center gap-2">
                                     Get Access <ArrowDownLeft className="w-5 h-5 group-hover:rotate-45 transition-transform" />
                                 </span>
@@ -90,13 +91,13 @@ export default function LandingPage() {
                                 </div>
 
                                 {/* Animated Bars */}
-                                <div className="flex items-end justify-center gap-2 h-1/2 w-3/4 border-b-4 border-black pb-0.5">
+                                <div aria-hidden="true" className="flex items-end justify-center gap-2 h-1/2 w-3/4 border-b-4 border-black pb-0.5">
                                     {[60, 80, 40, 90, 50, 70, 30].map((h, i) => (
                                         <motion.div
                                             key={i}
-                                            initial={{ height: "10%" }}
+                                            initial={prefersReducedMotion ? { height: `${h}%` } : { height: "10%" }}
                                             animate={{ height: `${h}%` }}
-                                            transition={{ duration: 0.8, delay: i * 0.1, ease: "backOut" }}
+                                            transition={{ duration: prefersReducedMotion ? 0 : 0.8, delay: prefersReducedMotion ? 0 : i * 0.1, ease: "backOut" }}
                                             className="w-full bg-black hover:bg-neutral-600 transition-colors border-t-2 border-x-2 border-black"
                                         />
                                     ))}
@@ -110,48 +111,48 @@ export default function LandingPage() {
             {/* Features Marquee */}
             <div className="overflow-hidden border-b-2 border-black bg-black text-white py-6">
                 <motion.div
-                    animate={{ x: ["0%", "-50%"] }}
+                    animate={prefersReducedMotion ? {} : { x: ["0%", "-50%"] }}
                     transition={{ repeat: Infinity, ease: "linear", duration: 10 }}
                     className="whitespace-nowrap flex gap-12 text-4xl font-black uppercase tracking-tighter"
                 >
                     <span>35+ Database Connectors</span>
-                    <Zap className="w-8 h-8 fill-yellow-400 text-black animate-pulse" />
+                    <Zap aria-hidden="true" className="w-8 h-8 fill-yellow-400 text-black" />
                     <span>AI Powered Generation</span>
-                    <Zap className="w-8 h-8 fill-yellow-400 text-black animate-pulse" />
+                    <Zap aria-hidden="true" className="w-8 h-8 fill-yellow-400 text-black" />
                     <span>Instant Dashboards</span>
-                    <Zap className="w-8 h-8 fill-yellow-400 text-black animate-pulse" />
+                    <Zap aria-hidden="true" className="w-8 h-8 fill-yellow-400 text-black" />
                     <span>Secure Enterprise Vault</span>
-                    <Zap className="w-8 h-8 fill-yellow-400 text-black animate-pulse" />
+                    <Zap aria-hidden="true" className="w-8 h-8 fill-yellow-400 text-black" />
                     <span>35+ Database Connectors</span>
-                    <Zap className="w-8 h-8 fill-yellow-400 text-black animate-pulse" />
+                    <Zap aria-hidden="true" className="w-8 h-8 fill-yellow-400 text-black" />
                     <span>AI Powered Generation</span>
-                    <Zap className="w-8 h-8 fill-yellow-400 text-black animate-pulse" />
+                    <Zap aria-hidden="true" className="w-8 h-8 fill-yellow-400 text-black" />
                     <span>Instant Dashboards</span>
-                    <Zap className="w-8 h-8 fill-yellow-400 text-black animate-pulse" />
+                    <Zap aria-hidden="true" className="w-8 h-8 fill-yellow-400 text-black" />
                     <span>Secure Enterprise Vault</span>
-                    <Zap className="w-8 h-8 fill-yellow-400 text-black animate-pulse" />
+                    <Zap aria-hidden="true" className="w-8 h-8 fill-yellow-400 text-black" />
                 </motion.div>
             </div>
 
             {/* Brutalist Grid Section */}
             <section id="features" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 min-h-[50vh] bg-white">
                 <div className="border-r-2 border-b-2 border-black p-8 flex flex-col justify-between hover:bg-neutral-100 transition-colors group">
-                    <Grid className="w-12 h-12 mb-4 group-hover:rotate-90 transition-transform stroke-2" />
+                    <Grid aria-hidden="true" className="w-12 h-12 mb-4 group-hover:rotate-90 transition-transform motion-reduce:transition-none motion-reduce:group-hover:rotate-0 stroke-2" />
                     <h3 className="text-2xl font-black uppercase mb-2">Structure</h3>
                     <p className="border-t-2 border-black pt-2 font-mono text-sm leading-relaxed">Automated schema detection and relationship mapping.</p>
                 </div>
                 <div className="border-r-2 border-b-2 border-black p-8 flex flex-col justify-between hover:bg-neutral-100 transition-colors group">
-                    <Terminal className="w-12 h-12 mb-4 stroke-2" />
+                    <Terminal aria-hidden="true" className="w-12 h-12 mb-4 stroke-2" />
                     <h3 className="text-2xl font-black uppercase mb-2">Query</h3>
                     <p className="border-t-2 border-black pt-2 font-mono text-sm leading-relaxed">Natural language to complex SQL translation engine.</p>
                 </div>
                 <div className="border-r-2 border-b-2 border-black p-8 flex flex-col justify-between hover:bg-neutral-100 transition-colors group">
-                    <LayoutList className="w-12 h-12 mb-4 group-hover:scale-110 transition-transform stroke-2" />
+                    <LayoutList aria-hidden="true" className="w-12 h-12 mb-4 group-hover:scale-110 transition-transform motion-reduce:transition-none stroke-2" />
                     <h3 className="text-2xl font-black uppercase mb-2">Visualize</h3>
                     <p className="border-t-2 border-black pt-2 font-mono text-sm leading-relaxed">Instant generation of charts, graphs, and KPI cards.</p>
                 </div>
                 <div className="border-b-2 border-black p-8 flex flex-col justify-between hover:bg-neutral-100 transition-colors group">
-                    <Disc className="w-12 h-12 mb-4 animate-spin-slow stroke-2" />
+                    <Disc aria-hidden="true" className="w-12 h-12 mb-4 animate-spin-slow motion-reduce:animate-none stroke-2" />
                     <h3 className="text-2xl font-black uppercase mb-2">Deploy</h3>
                     <p className="border-t-2 border-black pt-2 font-mono text-sm leading-relaxed">One-click publishing to shareable, secure dashboards.</p>
                 </div>
@@ -171,7 +172,7 @@ export default function LandingPage() {
                         <div className="inline-block border-2 border-black bg-white px-4 py-1 text-sm font-bold uppercase mb-8 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
                             Powered By Google MCP Toolbox
                         </div>
-                        <h2 className="text-4xl md:text-6xl font-black uppercase leading-none mb-6">
+                        <h2 className="text-4xl md:text-6xl font-black uppercase leading-none mb-6 text-balance">
                             35+ Databases.<br />
                             <span className="bg-black text-white px-2">One Interface.</span>
                         </h2>
@@ -184,7 +185,7 @@ export default function LandingPage() {
                             rel="noopener noreferrer"
                             className="inline-flex items-center gap-2 text-sm font-bold uppercase tracking-wider underline decoration-2 underline-offset-4 hover:bg-black hover:text-white px-2 py-1 transition-colors"
                         >
-                            View Full Compatibility List <ExternalLink className="w-4 h-4" />
+                            View Full Compatibility List <ExternalLink aria-hidden="true" className="w-4 h-4" />
                         </a>
                     </div>
 
@@ -195,11 +196,11 @@ export default function LandingPage() {
                                 className="border border-black p-4 flex flex-col items-center justify-center gap-3 bg-white hover:bg-black hover:text-white transition-colors group min-h-[100px]"
                             >
                                 {DB_ICONS[db] ? (
-                                    <svg role="img" viewBox="0 0 24 24" fill="currentColor" className="w-7 h-7">
+                                    <svg role="img" aria-label={db} viewBox="0 0 24 24" fill="currentColor" className="w-7 h-7">
                                         <path d={DB_ICONS[db]} />
                                     </svg>
                                 ) : (
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-7 h-7">
+                                    <svg role="img" aria-label={db} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-7 h-7">
                                         <ellipse cx="12" cy="6" rx="8" ry="3" />
                                         <path d="M4 6v4c0 1.7 3.6 3 8 3s8-1.3 8-3V6" />
                                         <path d="M4 10v4c0 1.7 3.6 3 8 3s8-1.3 8-3v-4" />
@@ -216,7 +217,7 @@ export default function LandingPage() {
             {/* Open Source Banner */}
             <section className="border-b-2 border-black py-16 px-6 bg-black text-white">
                 <div className="max-w-4xl mx-auto text-center">
-                    <h2 className="text-3xl md:text-5xl font-black uppercase tracking-tighter mb-6">
+                    <h2 className="text-3xl md:text-5xl font-black uppercase tracking-tighter mb-6 text-balance">
                         Self-Hosted. Open Source.<br />
                         <span className="text-neutral-400">Your Data Stays Yours.</span>
                     </h2>
@@ -227,21 +228,19 @@ export default function LandingPage() {
                         href="https://github.com/alextiboldi/DataWeaver"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex items-center gap-3 bg-white text-black px-8 py-4 font-bold text-lg uppercase tracking-wider border-2 border-white shadow-[4px_4px_0px_0px_rgba(255,255,255,0.3)] hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all"
+                        className="inline-flex items-center gap-3 bg-white text-black px-8 py-4 font-bold text-lg uppercase tracking-wider border-2 border-white shadow-[4px_4px_0px_0px_rgba(255,255,255,0.3)] hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-[transform,box-shadow]"
                     >
-                        <Github className="w-6 h-6" />
+                        <Github aria-hidden="true" className="w-6 h-6" />
                         View on GitHub
                     </a>
                 </div>
             </section>
 
             <footer className="p-12 text-center uppercase font-bold tracking-widest text-xs bg-white text-black border-t-2 border-black flex flex-col items-center justify-center gap-4">
-                <Layers className="w-8 h-8" />
+                <Layers aria-hidden="true" className="w-8 h-8" />
                 <p>EST. 2026 // DataWeaver // All Systems Operational</p>
                 <div className="flex gap-4 mt-4 text-xs underline decoration-2 underline-offset-4">
-                    <a href="#" className="hover:bg-black hover:text-white px-2 transition-colors">Twitter</a>
-                    <a href="#" className="hover:bg-black hover:text-white px-2 transition-colors">GitHub</a>
-                    <a href="#" className="hover:bg-black hover:text-white px-2 transition-colors">Email</a>
+                    <a href="https://github.com/alextiboldi/DataWeaver" target="_blank" rel="noopener noreferrer" className="hover:bg-black hover:text-white px-2 transition-colors">GitHub</a>
                 </div>
             </footer>
         </div>

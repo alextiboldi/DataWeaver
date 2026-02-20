@@ -117,7 +117,7 @@ export function TableDetailSheet({
       <SheetContent side="right" className="w-full sm:max-w-lg">
         {isLoading || !table ? (
           <SheetHeader>
-            <SheetTitle>Loading...</SheetTitle>
+            <SheetTitle>Loading\u2026</SheetTitle>
           </SheetHeader>
         ) : (
           <>
@@ -163,7 +163,7 @@ export function TableDetailSheet({
                 disabled={aiLoading}
               >
                 <Sparkles className="size-3.5 mr-1.5" />
-                {aiLoading ? "Generating..." : "AI Document"}
+                {aiLoading ? "Generating\u2026" : "AI Document"}
               </Button>
 
               <div className="flex-1 min-h-0">
@@ -274,13 +274,14 @@ function EditableText({
   }
 
   return (
-    <div
+    <button
+      type="button"
       onClick={() => setEditing(true)}
-      className={`cursor-pointer hover:bg-muted/50 rounded px-1 py-0.5 -mx-1 ${className}`}
+      className={`cursor-pointer hover:bg-muted/50 rounded px-1 py-0.5 -mx-1 text-left w-full ${className}`}
     >
       {value || (
         <span className="text-muted-foreground italic">{placeholder}</span>
       )}
-    </div>
+    </button>
   );
 }

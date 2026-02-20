@@ -11,6 +11,7 @@ import {
   Pin,
   ChevronDown,
   Code,
+  Info,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -23,6 +24,12 @@ import {
 import { ChartRenderer } from "@/components/viz/chart-renderer";
 import { DataTable } from "@/components/data/data-table";
 import { SqlPreview } from "@/components/data/sql-preview";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { inferChartType, type ChartType } from "@/lib/viz/inference";
 import type { QueryResponse } from "@/lib/types/api";
 
@@ -30,6 +37,7 @@ interface ChartCardProps {
   data: QueryResponse;
   sql: string;
   title?: string;
+  description?: string;
   onPin?: (chartType: ChartType, sql: string) => void;
 }
 
@@ -64,6 +72,7 @@ export function ChartCard({
   data,
   sql,
   title,
+  description,
   onPin,
 }: ChartCardProps): React.ReactElement {
   const [chartType, setChartType] = React.useState<ChartType>(() =>
@@ -120,8 +129,20 @@ export function ChartCard({
         )}
       </div>
       <div className="px-6 pt-0 pb-2">
-        <div className="text-sm font-semibold leading-none">
+        <div className="flex items-center gap-1.5 text-sm font-semibold leading-none">
           {title ?? "Query Result"}
+          {description && (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Info className="size-3.5 text-muted-foreground cursor-help shrink-0" />
+                </TooltipTrigger>
+                <TooltipContent side="top" className="max-w-xs">
+                  <p className="text-xs">{description}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
         </div>
       </div>
       <CardContent>

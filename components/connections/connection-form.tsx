@@ -45,20 +45,35 @@ export function ConnectionForm({ onConnectionAdded }: ConnectionFormProps) {
     <Card className="p-4">
       <h3 className="font-medium mb-3">Add Connection</h3>
       <form onSubmit={handleSubmit} className="space-y-3">
-        <Input
-          placeholder="Connection name"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          required
-        />
-        <Input
-          placeholder="postgresql://user:pass@host:5432/dbname"
-          value={connectionUri}
-          onChange={(e) => setConnectionUri(e.target.value)}
-          required
-        />
+        <div className="space-y-1">
+          <label htmlFor="connection-name" className="text-sm font-medium leading-none">
+            Connection name
+          </label>
+          <Input
+            id="connection-name"
+            name="name"
+            placeholder="Connection name\u2026"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            required
+          />
+        </div>
+        <div className="space-y-1">
+          <label htmlFor="connection-uri" className="text-sm font-medium leading-none">
+            Connection URI
+          </label>
+          <Input
+            id="connection-uri"
+            name="connectionUri"
+            type="url"
+            placeholder="postgresql://user:pass@host:5432/dbname"
+            value={connectionUri}
+            onChange={(e) => setConnectionUri(e.target.value)}
+            required
+          />
+        </div>
         <Button type="submit" disabled={isSubmitting}>
-          {isSubmitting ? "Testing..." : "Add Connection"}
+          {isSubmitting ? "Testing\u2026" : "Add Connection"}
         </Button>
       </form>
     </Card>

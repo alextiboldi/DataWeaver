@@ -10,11 +10,17 @@ export const agentTools = {
       "Execute a read-only SQL query against the connected PostgreSQL database and return the results.",
     inputSchema: z.object({
       sql: z.string().describe("The PostgreSQL SQL query to execute"),
+      title: z
+        .string()
+        .optional()
+        .describe(
+          "Very short title, max 5 words (e.g. 'Top Sales by Revenue'). Do NOT repeat the explanation."
+        ),
       explanation: z
         .string()
         .describe("A brief explanation of what this query does and why"),
     }),
-    execute: async ({ sql, explanation }) => {
+    execute: async ({ sql, title, explanation }) => {
       const validation = validateQuery(sql);
       if (!validation.valid) {
         return {
@@ -30,6 +36,7 @@ export const agentTools = {
         const formatted = formatQueryResult(result);
         return {
           error: false,
+          title,
           explanation,
           ...formatted,
         };

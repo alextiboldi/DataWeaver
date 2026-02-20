@@ -40,6 +40,8 @@ export function TableList({ tables }: TableListProps) {
           <div key={table.name} className="border-b-2 border-black last:border-b-0">
             <button
               onClick={() => toggle(table.name)}
+              aria-expanded={isOpen}
+              aria-controls={`table-panel-${table.name}`}
               className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-neutral-50 transition-colors"
             >
               <ChevronRight
@@ -56,7 +58,7 @@ export function TableList({ tables }: TableListProps) {
               </span>
             </button>
             {isOpen && (
-              <div className="border-t-2 border-black">
+              <div id={`table-panel-${table.name}`} className="border-t-2 border-black">
                 <Table>
                   <TableHeader>
                     <TableRow>

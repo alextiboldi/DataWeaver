@@ -81,6 +81,7 @@ function AppSidebar() {
           className="uppercase tracking-tighter font-black text-xl flex items-center gap-2 px-2 py-1"
         >
           <Hexagon
+            aria-hidden="true"
             className="w-6 h-6 shrink-0 fill-black text-white"
             strokeWidth={2}
           />
@@ -98,8 +99,8 @@ function AppSidebar() {
                     isActive={pathname?.startsWith(item.href)}
                     tooltip={item.title}
                   >
-                    <Link href={item.href}>
-                      <item.icon />
+                    <Link href={item.href} aria-current={pathname?.startsWith(item.href) ? "page" : undefined}>
+                      <item.icon aria-hidden="true" />
                       <span>{item.title}</span>
                     </Link>
                   </SidebarMenuButton>
@@ -126,7 +127,9 @@ export default function AppLayout({
       <SessionProvider>
         <SidebarProvider defaultOpen={false}>
           <AppSidebar />
-          <SidebarInset>{children}</SidebarInset>
+          <SidebarInset>
+            <main id="main-content">{children}</main>
+          </SidebarInset>
         </SidebarProvider>
       </SessionProvider>
     </Providers>

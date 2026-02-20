@@ -22,6 +22,7 @@ interface MessageProps {
 
 interface ToolResultData {
   error: boolean;
+  title?: string;
   explanation?: string;
   columns?: QueryResponse["columns"];
   rows?: QueryResponse["rows"];
@@ -171,7 +172,7 @@ function shouldShowStepSeparator(
 function findPrecedingQueryResult(
   parts: UIMessage["parts"],
   currentIndex: number
-): { sql: string; explanation?: string } | null {
+): { sql: string; title?: string; explanation?: string } | null {
   for (let j = currentIndex - 1; j >= 0; j--) {
     const prev = parts[j] as { type: string } & Record<string, unknown>;
     if (!isToolPart(prev)) continue;
@@ -181,11 +182,14 @@ function findPrecedingQueryResult(
       const result = prevTool.output as unknown;
       if (isQueryResult(result)) {
         const sql = extractSqlFromParts(parts, j);
+        const resultData = result as ToolResultData;
+        const title =
+          typeof resultData.title === "string" ? resultData.title : undefined;
         const explanation =
-          typeof (result as ToolResultData).explanation === "string"
-            ? (result as ToolResultData).explanation
+          typeof resultData.explanation === "string"
+            ? resultData.explanation
             : undefined;
-        return { sql, explanation };
+        return { sql, title, explanation };
       }
     }
     // Stop searching if we hit another non-utility tool output
@@ -198,15 +202,17 @@ function QueryActionBar({
   sql,
   title,
   onPin,
+  position = "bottom",
 }: {
   sql: string;
   title?: string;
   onPin?: (data: { chartType: string; sql: string; title: string }) => void;
+  position?: "top" | "bottom";
 }) {
   const [showSql, setShowSql] = React.useState(false);
   return (
-    <div className="mt-2">
-      <div className="flex items-center gap-1">
+    <div className={position === "top" ? "mb-2" : "mt-2"}>
+      <div className={`flex items-center gap-1 ${position === "top" ? "justify-end" : ""}`}>
         {onPin && (
           <Button
             variant="ghost"
@@ -300,12 +306,12 @@ export function Message({ message, onPinChart }: MessageProps): React.ReactEleme
                     key={`part-${i}`}
                     className="p-3 bg-muted/50 border-dashed"
                   >
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                      <div className="size-2 animate-pulse rounded-full bg-primary" />
+                    <div role="status" className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <div className="size-2 animate-pulse rounded-full bg-primary" aria-hidden="true" />
                       Running {toolName}
                       {input?.explanation
                         ? `: ${String(input.explanation)}`
-                        : "..."}
+                        : "\u2026"}
                     </div>
                   </Card>
                 );
@@ -328,17 +334,18 @@ export function Message({ message, onPinChart }: MessageProps): React.ReactEleme
                   const precedingQuery = findPrecedingQueryResult(message.parts, i);
                   elements.push(
                     <Card key={`part-${i}`} className="p-4">
+                      {precedingQuery && (
+                        <QueryActionBar
+                          sql={precedingQuery.sql}
+                          title={precedingQuery.title ?? precedingQuery.explanation}
+                          onPin={onPinChart}
+                          position="top"
+                        />
+                      )}
                       <UIRenderer
                         spec={uiResult.spec}
                         title={uiResult.title}
                       />
-                      {precedingQuery && (
-                        <QueryActionBar
-                          sql={precedingQuery.sql}
-                          title={precedingQuery.explanation}
-                          onPin={onPinChart}
-                        />
-                      )}
                     </Card>
                   );
                 } else if (isComparisonResult(result)) {
@@ -381,9 +388,14 @@ export function Message({ message, onPinChart }: MessageProps): React.ReactEleme
                   };
 
                   const sql = extractSqlFromParts(message.parts, i);
+                  const resultData = result as ToolResultData;
+                  const shortTitle =
+                    typeof resultData.title === "string"
+                      ? resultData.title
+                      : undefined;
                   const explanation =
-                    typeof (result as ToolResultData).explanation === "string"
-                      ? (result as ToolResultData).explanation
+                    typeof resultData.explanation === "string"
+                      ? resultData.explanation
                       : undefined;
 
                   elements.push(
@@ -391,8 +403,9 @@ export function Message({ message, onPinChart }: MessageProps): React.ReactEleme
                       key={`part-${i}`}
                       data={queryResponse}
                       sql={sql}
-                      title={explanation}
-                      onPin={onPinChart ? (chartType, sqlStr) => onPinChart({ chartType, sql: sqlStr, title: explanation ?? "Query Result" }) : undefined}
+                      title={shortTitle ?? explanation}
+                      description={shortTitle ? explanation : undefined}
+                      onPin={onPinChart ? (chartType, sqlStr) => onPinChart({ chartType, sql: sqlStr, title: shortTitle ?? explanation ?? "Query Result" }) : undefined}
                     />
                   );
                 } else if ((result as ToolResultData).error) {
@@ -403,7 +416,7 @@ export function Message({ message, onPinChart }: MessageProps): React.ReactEleme
                       className="p-3 border-destructive/50 bg-destructive/10"
                     >
                       <div className="text-sm text-destructive">
-                        {errorResult.message ?? "Query failed"}
+                        {errorResult.message ?? "Query failed. Try rephrasing your question."}
                       </div>
                       {errorResult.suggestion && (
                         <div className="mt-1 text-xs text-muted-foreground">

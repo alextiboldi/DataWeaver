@@ -50,7 +50,7 @@ export function ComponentCarousel() {
             <div className="inline-block border-2 border-black bg-black text-white px-3 py-1 text-xs font-bold uppercase tracking-widest mb-4">
               Visual Toolkit
             </div>
-            <h2 className="text-4xl md:text-5xl font-black uppercase tracking-tighter leading-none">
+            <h2 className="text-4xl md:text-5xl font-black uppercase tracking-tighter leading-none text-balance">
               AI-Composed<br />
               <span className="text-neutral-400">Components</span>
             </h2>
@@ -59,16 +59,18 @@ export function ComponentCarousel() {
             <button
               onClick={() => snapTo(activeIndex - 1)}
               disabled={activeIndex === 0}
+              aria-label="Previous component"
               className="w-12 h-12 border-2 border-black flex items-center justify-center hover:bg-black hover:text-white transition-colors disabled:opacity-20 disabled:hover:bg-white disabled:hover:text-black"
             >
-              <ChevronLeft className="w-5 h-5" strokeWidth={3} />
+              <ChevronLeft aria-hidden="true" className="w-5 h-5" strokeWidth={3} />
             </button>
             <button
               onClick={() => snapTo(activeIndex + 1)}
               disabled={activeIndex === TOTAL - 1}
+              aria-label="Next component"
               className="w-12 h-12 border-2 border-black flex items-center justify-center hover:bg-black hover:text-white transition-colors disabled:opacity-20 disabled:hover:bg-white disabled:hover:text-black"
             >
-              <ChevronRight className="w-5 h-5" strokeWidth={3} />
+              <ChevronRight aria-hidden="true" className="w-5 h-5" strokeWidth={3} />
             </button>
           </div>
         </div>
@@ -114,6 +116,7 @@ export function ComponentCarousel() {
             <button
               key={i}
               onClick={() => snapTo(i)}
+              aria-label={`Go to component ${i + 1}`}
               className={`w-2 h-2 border border-black transition-colors ${i === activeIndex ? "bg-black" : "bg-transparent hover:bg-neutral-300"}`}
             />
           ))}

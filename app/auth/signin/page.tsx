@@ -69,6 +69,7 @@ function SignInContent(): React.ReactElement {
                 id="email"
                 type="email"
                 placeholder="you@example.com"
+                autoComplete="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
@@ -86,6 +87,7 @@ function SignInContent(): React.ReactElement {
                 id="password"
                 type="password"
                 placeholder="Enter your password"
+                autoComplete="current-password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
@@ -93,10 +95,10 @@ function SignInContent(): React.ReactElement {
               />
             </div>
             {error && (
-              <div className="text-sm text-destructive">{error}</div>
+              <div role="alert" className="text-sm text-destructive">{error}</div>
             )}
             <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? "Signing in..." : "Sign in"}
+              {isLoading ? "Signing in\u2026" : "Sign in"}
             </Button>
           </form>
 
@@ -114,6 +116,7 @@ function SignInContent(): React.ReactElement {
             disabled={isLoading}
           >
             <svg
+              aria-hidden="true"
               className="mr-2 size-4"
               viewBox="0 0 24 24"
               fill="currentColor"

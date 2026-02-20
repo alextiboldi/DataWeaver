@@ -132,6 +132,7 @@ function DashboardPanel({
                 <TooltipTrigger asChild>
                   <button
                     type="button"
+                    aria-label="Panel description"
                     className="size-6 inline-flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
                     onMouseDown={(e) => e.stopPropagation()}
                   >
@@ -148,6 +149,7 @@ function DashboardPanel({
             variant="ghost"
             size="icon"
             className="size-6"
+            aria-label="Toggle SQL preview"
             onClick={() => setShowSql((s) => !s)}
             onMouseDown={(e) => e.stopPropagation()}
           >
@@ -157,6 +159,7 @@ function DashboardPanel({
             variant="ghost"
             size="icon"
             className="size-6"
+            aria-label="Remove panel"
             onClick={onRemove}
           >
             <X className="size-3" />
@@ -171,7 +174,7 @@ function DashboardPanel({
       <CardContent className="flex-1 min-h-0 overflow-hidden">
         {!cached || cached.status === "loading" ? (
           <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
-            Loading...
+            Loading\u2026
           </div>
         ) : cached.status === "error" ? (
           <div className="flex h-full items-center justify-center text-sm text-destructive">

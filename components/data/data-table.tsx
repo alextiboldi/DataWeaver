@@ -59,7 +59,8 @@ export function DataTable({ data }: DataTableProps) {
     <div className="space-y-2">
       <div className="flex items-center justify-between">
         <Input
-          placeholder="Filter results..."
+          placeholder="Filter results\u2026"
+          aria-label="Filter results"
           value={globalFilter}
           onChange={(e) => setGlobalFilter(e.target.value)}
           className="max-w-xs"
@@ -77,15 +78,33 @@ export function DataTable({ data }: DataTableProps) {
                   <TableHead
                     key={header.id}
                     className="cursor-pointer select-none"
+                    role="columnheader"
+                    aria-sort={
+                      header.column.getIsSorted() === "asc"
+                        ? "ascending"
+                        : header.column.getIsSorted() === "desc"
+                          ? "descending"
+                          : "none"
+                    }
+                    tabIndex={0}
                     onClick={header.column.getToggleSortingHandler()}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        header.column.getToggleSortingHandler()?.(e);
+                      }
+                    }}
                   >
                     {flexRender(
                       header.column.columnDef.header,
                       header.getContext(),
                     )}
-                    {{ asc: " ↑", desc: " ↓" }[
-                      header.column.getIsSorted() as string
-                    ] ?? ""}
+                    {header.column.getIsSorted() === "asc" && (
+                      <span aria-label="sorted ascending"> ↑</span>
+                    )}
+                    {header.column.getIsSorted() === "desc" && (
+                      <span aria-label="sorted descending"> ↓</span>
+                    )}
                   </TableHead>
                 ))}
               </TableRow>
@@ -96,7 +115,7 @@ export function DataTable({ data }: DataTableProps) {
               table.getRowModel().rows.map((row) => (
                 <TableRow key={row.id}>
                   {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id} className="font-mono text-sm">
+                    <TableCell key={cell.id} className="font-mono text-sm tabular-nums">
                       {flexRender(
                         cell.column.columnDef.cell,
                         cell.getContext(),
