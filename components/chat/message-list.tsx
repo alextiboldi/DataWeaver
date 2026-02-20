@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import type { UIMessage } from "ai";
+import { Loader2 } from "lucide-react";
 
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Message } from "./message";
@@ -9,14 +10,23 @@ import { Message } from "./message";
 interface MessageListProps {
   messages: UIMessage[];
   onPinChart?: (data: { chartType: string; sql: string; title: string; description?: string }) => void;
+  isLoading?: boolean;
 }
 
-export function MessageList({ messages, onPinChart }: MessageListProps): React.ReactElement {
+export function MessageList({ messages, onPinChart, isLoading }: MessageListProps): React.ReactElement {
   const bottomRef = React.useRef<HTMLDivElement>(null);
 
   React.useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  if (isLoading) {
+    return (
+      <div className="flex-1 min-h-0 flex items-center justify-center">
+        <Loader2 className="size-5 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
 
   return (
     <ScrollArea className="flex-1 min-h-0 p-4">

@@ -41,17 +41,9 @@ export function ChatPanel({ dashboardId, initialMessages, isLoadingMessages, onP
     await sendMessage({ text: trimmed });
   }
 
-  if (isLoadingMessages) {
-    return (
-      <div className="flex h-full items-center justify-center">
-        <p className="text-sm text-muted-foreground">Loading messages...</p>
-      </div>
-    );
-  }
-
   return (
     <div className="flex h-full flex-col">
-      <MessageList messages={messages} onPinChart={onPinChart} />
+      <MessageList messages={messages} onPinChart={onPinChart} isLoading={isLoadingMessages} />
       <ChatInput
         input={input}
         onInputChange={setInput}

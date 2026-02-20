@@ -229,7 +229,7 @@ export default function DashboardDetailPage({
 
       <div className="flex flex-1 min-h-0">
         <div
-          className="flex flex-col border-r-2 border-black"
+          className="flex flex-col border-r-2 border-black h-full"
           style={{ width: sidebarWidth, minWidth: 280, maxWidth: 500 }}
         >
           <ChatPanel
