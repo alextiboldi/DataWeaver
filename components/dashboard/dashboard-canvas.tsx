@@ -8,6 +8,7 @@ import "react-resizable/css/styles.css";
 import { X, GripVertical, Pencil, Info, Code } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 import {
   Tooltip,
   TooltipContent,
@@ -116,7 +117,7 @@ function DashboardPanel({
   const [showSql, setShowSql] = React.useState(false);
 
   return (
-    <Card className="h-full flex flex-col overflow-hidden">
+    <Card className="h-full flex flex-col overflow-hidden py-0 gap-0">
       <div className="drag-handle cursor-grab flex items-center justify-between gap-2 px-4 pt-3 pb-2 active:cursor-grabbing">
         <div className="flex items-center gap-2 min-w-0 flex-1">
           <GripVertical className="size-4 shrink-0 text-muted-foreground" />
@@ -166,15 +167,14 @@ function DashboardPanel({
           </Button>
         </div>
       </div>
-      {showSql && (
-        <div className="px-4 pb-2">
-          <SqlPreview sql={panel.sql} />
-        </div>
-      )}
-      <CardContent className="flex-1 min-h-0 overflow-hidden">
-        {!cached || cached.status === "loading" ? (
+      <CardContent className={cn("flex-1 min-h-0 overflow-hidden", showSql && "px-0")}>
+        {showSql ? (
+          <div className="h-full overflow-auto bg-zinc-950 text-zinc-100 px-3 py-2 rounded-b-none">
+            <pre className="text-sm font-mono whitespace-pre-wrap">{panel.sql.trim()}</pre>
+          </div>
+        ) : !cached || cached.status === "loading" ? (
           <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
-            Loading\u2026
+            Loading{"\u2026"}
           </div>
         ) : cached.status === "error" ? (
           <div className="flex h-full items-center justify-center text-sm text-destructive">
