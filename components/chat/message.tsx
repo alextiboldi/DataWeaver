@@ -5,10 +5,13 @@ import type { UIMessage } from "ai";
 import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
+import { Pin } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { ChartCard } from "@/components/viz/chart-card";
+import { SqlPreview } from "@/components/data/sql-preview";
 import { UIRenderer } from "@/components/chat/ui-renderer";
 import type { QueryResponse } from "@/lib/types/api";
 
@@ -165,6 +168,80 @@ function shouldShowStepSeparator(
   return false;
 }
 
+function findPrecedingQueryResult(
+  parts: UIMessage["parts"],
+  currentIndex: number
+): { sql: string; explanation?: string } | null {
+  for (let j = currentIndex - 1; j >= 0; j--) {
+    const prev = parts[j] as { type: string } & Record<string, unknown>;
+    if (!isToolPart(prev)) continue;
+    const prevTool = prev as ToolPart;
+    const name = getToolName(prevTool);
+    if (name === "executeQuery" && isOutputReady(prevTool)) {
+      const result = prevTool.output as unknown;
+      if (isQueryResult(result)) {
+        const sql = extractSqlFromParts(parts, j);
+        const explanation =
+          typeof (result as ToolResultData).explanation === "string"
+            ? (result as ToolResultData).explanation
+            : undefined;
+        return { sql, explanation };
+      }
+    }
+    // Stop searching if we hit another non-utility tool output
+    if (name !== "renderUI" && name !== "getSchema" && isOutputReady(prevTool)) break;
+  }
+  return null;
+}
+
+function QueryActionBar({
+  sql,
+  title,
+  onPin,
+}: {
+  sql: string;
+  title?: string;
+  onPin?: (data: { chartType: string; sql: string; title: string }) => void;
+}) {
+  const [showSql, setShowSql] = React.useState(false);
+  return (
+    <div className="mt-2">
+      <div className="flex items-center gap-1">
+        {onPin && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() =>
+              onPin({
+                chartType: "table",
+                sql,
+                title: title ?? "Query Result",
+              })
+            }
+            className="h-7 gap-1 text-xs"
+          >
+            <Pin className="size-3" />
+            Pin
+          </Button>
+        )}
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setShowSql((p) => !p)}
+          className="h-7 text-xs"
+        >
+          {showSql ? "Hide SQL" : "SQL"}
+        </Button>
+      </div>
+      {showSql && (
+        <div className="mt-2">
+          <SqlPreview sql={sql} />
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function Message({ message, onPinChart }: MessageProps): React.ReactElement {
   const isUser = message.role === "user";
 
@@ -248,12 +325,20 @@ export function Message({ message, onPinChart }: MessageProps): React.ReactEleme
                     spec: Record<string, unknown>;
                     title?: string;
                   };
+                  const precedingQuery = findPrecedingQueryResult(message.parts, i);
                   elements.push(
                     <Card key={`part-${i}`} className="p-4">
                       <UIRenderer
                         spec={uiResult.spec}
                         title={uiResult.title}
                       />
+                      {precedingQuery && (
+                        <QueryActionBar
+                          sql={precedingQuery.sql}
+                          title={precedingQuery.explanation}
+                          onPin={onPinChart}
+                        />
+                      )}
                     </Card>
                   );
                 } else if (isComparisonResult(result)) {
