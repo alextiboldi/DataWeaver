@@ -64,17 +64,15 @@ export default function DashboardDetailPage({
   });
 
   const pinChartMutation = useMutation({
-    mutationFn: async (data: { chartType: string; sql: string; title: string }) => {
-      const panelCount = dashboard?.panels.length ?? 0;
-      const shortTitle = `${data.chartType.charAt(0).toUpperCase()}${data.chartType.slice(1)} ${panelCount + 1}`;
+    mutationFn: async (data: { chartType: string; sql: string; title: string; description?: string }) => {
       const res = await fetch(`/api/dashboards/${id}/panels`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           chartType: data.chartType,
           sql: data.sql,
-          title: shortTitle,
-          description: data.title,
+          title: data.title,
+          description: data.description,
         }),
       });
       if (!res.ok) throw new Error("Failed to pin chart");

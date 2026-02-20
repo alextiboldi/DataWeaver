@@ -8,7 +8,7 @@ import { Message } from "./message";
 
 interface MessageListProps {
   messages: UIMessage[];
-  onPinChart?: (data: { chartType: string; sql: string; title: string }) => void;
+  onPinChart?: (data: { chartType: string; sql: string; title: string; description?: string }) => void;
 }
 
 export function MessageList({ messages, onPinChart }: MessageListProps): React.ReactElement {

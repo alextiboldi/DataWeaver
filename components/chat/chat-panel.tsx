@@ -11,7 +11,7 @@ interface ChatPanelProps {
   dashboardId: string;
   initialMessages?: UIMessage[];
   isLoadingMessages?: boolean;
-  onPinChart?: (data: { chartType: string; sql: string; title: string }) => void;
+  onPinChart?: (data: { chartType: string; sql: string; title: string; description?: string }) => void;
 }
 
 export function ChatPanel({ dashboardId, initialMessages, isLoadingMessages, onPinChart }: ChatPanelProps): React.ReactElement {

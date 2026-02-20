@@ -17,7 +17,7 @@ import type { QueryResponse } from "@/lib/types/api";
 
 interface MessageProps {
   message: UIMessage;
-  onPinChart?: (data: { chartType: string; sql: string; title: string }) => void;
+  onPinChart?: (data: { chartType: string; sql: string; title: string; description?: string }) => void;
 }
 
 interface ToolResultData {
@@ -201,12 +201,14 @@ function findPrecedingQueryResult(
 function QueryActionBar({
   sql,
   title,
+  description,
   onPin,
   position = "bottom",
 }: {
   sql: string;
   title?: string;
-  onPin?: (data: { chartType: string; sql: string; title: string }) => void;
+  description?: string;
+  onPin?: (data: { chartType: string; sql: string; title: string; description?: string }) => void;
   position?: "top" | "bottom";
 }) {
   const [showSql, setShowSql] = React.useState(false);
@@ -222,6 +224,7 @@ function QueryActionBar({
                 chartType: "table",
                 sql,
                 title: title ?? "Query Result",
+                description,
               })
             }
             className="h-7 gap-1 text-xs"
@@ -338,6 +341,7 @@ export function Message({ message, onPinChart }: MessageProps): React.ReactEleme
                         <QueryActionBar
                           sql={precedingQuery.sql}
                           title={precedingQuery.title ?? precedingQuery.explanation}
+                          description={precedingQuery.title ? precedingQuery.explanation : undefined}
                           onPin={onPinChart}
                           position="top"
                         />
@@ -405,7 +409,7 @@ export function Message({ message, onPinChart }: MessageProps): React.ReactEleme
                       sql={sql}
                       title={shortTitle ?? explanation}
                       description={shortTitle ? explanation : undefined}
-                      onPin={onPinChart ? (chartType, sqlStr) => onPinChart({ chartType, sql: sqlStr, title: shortTitle ?? explanation ?? "Query Result" }) : undefined}
+                      onPin={onPinChart ? (chartType, sqlStr) => onPinChart({ chartType, sql: sqlStr, title: shortTitle ?? explanation ?? "Query Result", description: shortTitle ? explanation : undefined }) : undefined}
                     />
                   );
                 } else if ((result as ToolResultData).error) {
