@@ -5,9 +5,9 @@ import { useQueries } from "@tanstack/react-query";
 import { GridLayout, useContainerWidth, type LayoutItem } from "react-grid-layout";
 import "react-grid-layout/css/styles.css";
 import "react-resizable/css/styles.css";
-import { X, GripVertical, Pencil, Info } from "lucide-react";
+import { X, GripVertical, Pencil, Info, Code } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Tooltip,
   TooltipContent,
@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/tooltip";
 import { ChartRenderer } from "@/components/viz/chart-renderer";
 import { DataTable } from "@/components/data/data-table";
+import { SqlPreview } from "@/components/data/sql-preview";
 import type { ChartType } from "@/lib/viz/inference";
 import type { QueryResponse } from "@/lib/types/api";
 
@@ -101,6 +102,96 @@ function EditableTitle({
   );
 }
 
+function DashboardPanel({
+  panel,
+  cached,
+  onRemove,
+  onRename,
+}: {
+  panel: DashboardPanelData;
+  cached: { status: "loading" | "error" | "loaded"; data?: QueryResponse; message?: string } | undefined;
+  onRemove: () => void;
+  onRename: (title: string) => void;
+}): React.ReactElement {
+  const [showSql, setShowSql] = React.useState(false);
+
+  return (
+    <Card className="h-full flex flex-col overflow-hidden">
+      <div className="drag-handle cursor-grab flex items-center justify-between gap-2 px-4 pt-3 pb-2 active:cursor-grabbing">
+        <div className="flex items-center gap-2 min-w-0 flex-1">
+          <GripVertical className="size-4 shrink-0 text-muted-foreground" />
+          <EditableTitle
+            value={panel.title}
+            onSave={onRename}
+          />
+        </div>
+        <div className="flex items-center shrink-0">
+          {panel.description && (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    className="size-6 inline-flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+                    onMouseDown={(e) => e.stopPropagation()}
+                  >
+                    <Info className="size-3" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="top" className="max-w-64">
+                  {panel.description}
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="size-6"
+            onClick={() => setShowSql((s) => !s)}
+            onMouseDown={(e) => e.stopPropagation()}
+          >
+            <Code className="size-3" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="size-6"
+            onClick={onRemove}
+          >
+            <X className="size-3" />
+          </Button>
+        </div>
+      </div>
+      {showSql && (
+        <div className="px-4 pb-2">
+          <SqlPreview sql={panel.sql} />
+        </div>
+      )}
+      <CardContent className="flex-1 min-h-0 overflow-hidden">
+        {!cached || cached.status === "loading" ? (
+          <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
+            Loading...
+          </div>
+        ) : cached.status === "error" ? (
+          <div className="flex h-full items-center justify-center text-sm text-destructive">
+            {cached.message}
+          </div>
+        ) : panel.chartType === "table" ? (
+          <DataTable data={cached.data!} />
+        ) : (
+          <div className="h-full w-full">
+            <ChartRenderer
+              data={cached.data!}
+              chartType={panel.chartType as ChartType}
+            />
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
 export function DashboardCanvas({
   panels,
   dataSourceId,
@@ -174,72 +265,16 @@ export function DashboardCanvas({
       dragConfig={{ handle: ".drag-handle" }}
       onLayoutChange={handleLayoutChange}
     >
-      {panels.map((panel) => {
-        const cached = panelDataMap[panel.id];
-        return (
+      {panels.map((panel) => (
           <div key={panel.id}>
-            <Card className="h-full flex flex-col overflow-hidden">
-              <CardHeader className="drag-handle cursor-grab pb-2 flex-row items-center justify-between space-y-0 active:cursor-grabbing">
-                <div className="flex items-center gap-2 min-w-0 flex-1">
-                  <GripVertical className="size-4 shrink-0 text-muted-foreground" />
-                  <EditableTitle
-                    value={panel.title}
-                    onSave={(title) => onRenamePanel(panel.id, title)}
-                  />
-                </div>
-                <div className="flex items-center shrink-0">
-                  {panel.description && (
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <button
-                            type="button"
-                            className="size-6 inline-flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
-                            onMouseDown={(e) => e.stopPropagation()}
-                          >
-                            <Info className="size-3" />
-                          </button>
-                        </TooltipTrigger>
-                        <TooltipContent side="top" className="max-w-64">
-                          {panel.description}
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  )}
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="size-6"
-                    onClick={() => onRemovePanel(panel.id)}
-                  >
-                    <X className="size-3" />
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent className="flex-1 min-h-0 overflow-hidden">
-                {!cached || cached.status === "loading" ? (
-                  <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
-                    Loading...
-                  </div>
-                ) : cached.status === "error" ? (
-                  <div className="flex h-full items-center justify-center text-sm text-destructive">
-                    {cached.message}
-                  </div>
-                ) : panel.chartType === "table" ? (
-                  <DataTable data={cached.data!} />
-                ) : (
-                  <div className="h-full w-full">
-                    <ChartRenderer
-                      data={cached.data!}
-                      chartType={panel.chartType as ChartType}
-                    />
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+            <DashboardPanel
+              panel={panel}
+              cached={panelDataMap[panel.id]}
+              onRemove={() => onRemovePanel(panel.id)}
+              onRename={(title) => onRenamePanel(panel.id, title)}
+            />
           </div>
-        );
-      })}
+        ))}
     </GridLayout>
     )}
     </div>
