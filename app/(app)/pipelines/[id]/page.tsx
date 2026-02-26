@@ -201,7 +201,7 @@ export default function PipelineEditorPage({
           className="flex flex-col border-l-2 border-black h-full"
           style={{ width: chatWidth, minWidth: 280, maxWidth: 500 }}
         >
-          <PipelineChatPanel pipelineId={id} />
+          <PipelineChatPanel pipelineId={id} onMappingsChanged={handleMappingUpdated} />
         </div>
       </div>
 
