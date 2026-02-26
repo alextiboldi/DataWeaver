@@ -83,8 +83,8 @@ export function ChartCard({
   const ActiveIcon = chartIcons[chartType];
 
   return (
-    <Card className="w-full">
-      <div className="flex items-center justify-end gap-1 px-4 -mt-3 pb-0">
+    <Card className="w-full py-3 gap-1">
+      <div className="flex items-center justify-end gap-1 px-4 pb-0">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="outline" size="xs" className="gap-1">

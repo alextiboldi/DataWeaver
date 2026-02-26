@@ -36,6 +36,62 @@ const CHART_COLORS = [
   "var(--chart-5)",
 ];
 
+const MAX_LABEL_LENGTH = 10;
+
+function truncateLabel(value: string | number): string {
+  const str = String(value);
+  return str.length > MAX_LABEL_LENGTH
+    ? str.slice(0, MAX_LABEL_LENGTH - 1) + "\u2026"
+    : str;
+}
+
+function AngledTick(props: Record<string, unknown>) {
+  const { x, y, payload } = props as { x: number; y: number; payload: { value: string | number } };
+  const label = truncateLabel(payload.value);
+  return (
+    <g transform={`translate(${x},${y})`}>
+      <text
+        x={0}
+        y={0}
+        dy={4}
+        textAnchor="end"
+        fill="#000"
+        stroke="#fff"
+        strokeWidth={3}
+        paintOrder="stroke"
+        fontSize={11}
+        fontWeight={500}
+        transform="rotate(-45)"
+      >
+        {label}
+      </text>
+    </g>
+  );
+}
+
+function StraightTick(props: Record<string, unknown>) {
+  const { x, y, payload } = props as { x: number; y: number; payload: { value: string | number } };
+  const label = truncateLabel(payload.value);
+  return (
+    <g transform={`translate(${x},${y})`}>
+      <text
+        x={0}
+        y={0}
+        dy={12}
+        textAnchor="middle"
+        fill="#000"
+        stroke="#fff"
+        strokeWidth={3}
+        paintOrder="stroke"
+        fontSize={11}
+        fontWeight={500}
+      >
+        {label}
+      </text>
+    </g>
+  );
+}
+
 function getColumnsByKind(columns: QueryResponse["columns"]): {
   categorical: string[];
   numeric: string[];
@@ -90,14 +146,15 @@ function RenderBarChart({
 
   return (
     <ResponsiveContainer width="100%" height="100%">
-      <BarChart data={data.rows}>
+      <BarChart data={data.rows} margin={{ top: 5, right: 5, bottom: 40, left: 5 }} barCategoryGap="20%">
         <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
         <XAxis
           dataKey={xKey}
-          tick={{ fontSize: 12 }}
-          className="fill-muted-foreground"
+          tick={AngledTick}
+          interval={0}
+          height={60}
         />
-        <YAxis tick={{ fontSize: 12 }} className="fill-muted-foreground" />
+        <YAxis tick={{ fontSize: 10, fill: "#525252" }} width={40} />
         <Tooltip
           contentStyle={{
             backgroundColor: "oklch(var(--popover))",
@@ -112,6 +169,7 @@ function RenderBarChart({
             dataKey={key}
             fill={CHART_COLORS[i % CHART_COLORS.length]}
             radius={[4, 4, 0, 0]}
+            maxBarSize={50}
           />
         ))}
         {numeric.length > 1 && <Legend />}
@@ -130,14 +188,15 @@ function RenderLineChart({
 
   return (
     <ResponsiveContainer width="100%" height="100%">
-      <LineChart data={data.rows}>
+      <LineChart data={data.rows} margin={{ bottom: 40 }}>
         <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
         <XAxis
           dataKey={xKey}
-          tick={{ fontSize: 12 }}
-          className="fill-muted-foreground"
+          tick={AngledTick}
+          interval={0}
+          height={60}
         />
-        <YAxis tick={{ fontSize: 12 }} className="fill-muted-foreground" />
+        <YAxis tick={{ fontSize: 10, fill: "#525252" }} width={40} />
         <Tooltip
           contentStyle={{
             backgroundColor: "oklch(var(--popover))",
@@ -225,14 +284,13 @@ function RenderScatterChart({
         <XAxis
           dataKey={xKey}
           name={xKey}
-          tick={{ fontSize: 12 }}
-          className="fill-muted-foreground"
+          tick={StraightTick}
         />
         <YAxis
           dataKey={yKey}
           name={yKey}
-          tick={{ fontSize: 12 }}
-          className="fill-muted-foreground"
+          tick={{ fontSize: 10, fill: "#525252" }}
+          width={40}
         />
         <Tooltip
           cursor={{ strokeDasharray: "3 3" }}
@@ -259,14 +317,15 @@ function RenderAreaChart({
 
   return (
     <ResponsiveContainer width="100%" height="100%">
-      <AreaChart data={data.rows}>
+      <AreaChart data={data.rows} margin={{ bottom: 40 }}>
         <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
         <XAxis
           dataKey={xKey}
-          tick={{ fontSize: 12 }}
-          className="fill-muted-foreground"
+          tick={AngledTick}
+          interval={0}
+          height={60}
         />
-        <YAxis tick={{ fontSize: 12 }} className="fill-muted-foreground" />
+        <YAxis tick={{ fontSize: 10, fill: "#525252" }} width={40} />
         <Tooltip
           contentStyle={{
             backgroundColor: "oklch(var(--popover))",
