@@ -3,7 +3,7 @@
 import * as React from "react";
 import { use } from "react";
 import Link from "next/link";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, ArrowRight, Database, Download, GripVertical } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -61,10 +61,15 @@ export default function PipelineEditorPage({
   params: Promise<{ id: string }>;
 }): React.ReactElement {
   const { id } = use(params);
+  const queryClient = useQueryClient();
   const [selectedMappingId, setSelectedMappingId] = React.useState<string | null>(null);
   const [exportOpen, setExportOpen] = React.useState(false);
   const [chatWidth, setChatWidth] = React.useState(340);
   const isResizing = React.useRef(false);
+
+  const handleMappingUpdated = React.useCallback(() => {
+    void queryClient.invalidateQueries({ queryKey: ["pipeline", id] });
+  }, [queryClient, id]);
 
   const { data: pipeline, isLoading, error } = useQuery({
     queryKey: ["pipeline", id],
@@ -177,7 +182,9 @@ export default function PipelineEditorPage({
             style={{ width: 320, minWidth: 320 }}
           >
             <MappingDetailPanel
+              pipelineId={id}
               mapping={selectedMapping}
+              onUpdated={handleMappingUpdated}
               onClose={() => setSelectedMappingId(null)}
             />
           </div>
