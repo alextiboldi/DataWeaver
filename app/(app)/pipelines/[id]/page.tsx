@@ -22,10 +22,27 @@ export interface MappingData {
   orderIndex: number;
 }
 
+export interface TableColumnData {
+  columnName: string;
+  dataType: string;
+  isPrimaryKey: boolean;
+  isForeignKey: boolean;
+}
+
+export interface TableData {
+  id: string;
+  tableName: string;
+  displayName: string;
+  columns: TableColumnData[];
+}
+
 interface PipelineDataSource {
   id: string;
   name: string;
   type: string;
+  databaseDoc: {
+    tables: TableData[];
+  } | null;
 }
 
 interface PipelineDetail {
@@ -146,6 +163,8 @@ export default function PipelineEditorPage({
       <div className="flex flex-1 min-h-0">
         <div className="flex-1 overflow-auto">
           <PipelineCanvas
+            sourceTables={pipeline.sourceDataSource.databaseDoc?.tables ?? []}
+            destTables={pipeline.destDataSource.databaseDoc?.tables ?? []}
             mappings={pipeline.mappings}
             selectedMappingId={selectedMappingId}
             onSelectMapping={setSelectedMappingId}
