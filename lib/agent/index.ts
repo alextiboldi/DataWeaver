@@ -5,19 +5,10 @@ import {
   stepCountIs,
   type UIMessage,
 } from "ai";
-import { agentTools } from "./tools";
+import { createAgentTools } from "./tools";
 import { buildSystemPrompt } from "./prompts";
 import { introspectSchema } from "@/lib/toolbox/introspect";
 import prisma from "@/lib/db";
-
-let cachedSchema: Awaited<ReturnType<typeof introspectSchema>> | null = null;
-
-async function getSchema() {
-  if (!cachedSchema) {
-    cachedSchema = await introspectSchema();
-  }
-  return cachedSchema;
-}
 
 async function getCatalogDoc(dataSourceId?: string) {
   if (!dataSourceId) return null;
@@ -50,8 +41,17 @@ export async function createAgentStream(
   messages: UIMessage[],
   dataSourceId?: string
 ) {
+  let toolboxId = "sample-pg"; // fallback for legacy
+  if (dataSourceId) {
+    const ds = await prisma.dataSource.findUnique({
+      where: { id: dataSourceId },
+      select: { toolboxId: true },
+    });
+    if (ds) toolboxId = ds.toolboxId;
+  }
+
   const [schema, catalogDoc] = await Promise.all([
-    getSchema(),
+    introspectSchema(toolboxId),
     getCatalogDoc(dataSourceId),
   ]);
   const systemPrompt = buildSystemPrompt(schema, catalogDoc);
@@ -60,7 +60,7 @@ export async function createAgentStream(
     model: google("gemini-2.5-flash"),
     system: systemPrompt,
     messages: await convertToModelMessages(messages),
-    tools: agentTools,
+    tools: createAgentTools(toolboxId),
     stopWhen: stepCountIs(10),
   });
 }

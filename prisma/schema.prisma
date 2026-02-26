@@ -29,8 +29,9 @@ model DataSource {
   host          String?
   port          Int?
   database      String?
-  connectionUri String?
-  toolboxId     String
+  connectionUri    String?
+  connectionParams Json?
+  toolboxId        String
   status        String   @default("pending")
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt

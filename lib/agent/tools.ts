@@ -4,7 +4,8 @@ import { getToolboxClient } from "@/lib/toolbox/client";
 import { validateQuery } from "./validation";
 import { formatQueryResult } from "./formatter";
 
-export const agentTools = {
+export function createAgentTools(toolboxId: string) {
+  return {
   executeQuery: tool({
     description:
       "Execute a read-only SQL query against the connected PostgreSQL database and return the results.",
@@ -32,7 +33,7 @@ export const agentTools = {
 
       const client = getToolboxClient();
       try {
-        const result = await client.executeTool("execute-sql", { sql });
+        const result = await client.executeTool(`${toolboxId}-execute-sql`, { sql });
         const formatted = formatQueryResult(result);
         return {
           error: false,
@@ -65,10 +66,10 @@ export const agentTools = {
       const client = getToolboxClient();
 
       if (tableFilter) {
-        const result = await client.executeTool("describe-table", {
+        const result = await client.executeTool(`${toolboxId}-describe-table`, {
           table_name: tableFilter,
         });
-        const fks = await client.executeTool("get-foreign-keys", {
+        const fks = await client.executeTool(`${toolboxId}-get-foreign-keys`, {
           table_name: tableFilter,
         });
         return {
@@ -78,7 +79,7 @@ export const agentTools = {
         };
       }
 
-      const tables = await client.executeTool("list-tables");
+      const tables = await client.executeTool(`${toolboxId}-list-tables`);
       return { tables: tables.rows };
     },
   }),
@@ -138,8 +139,8 @@ export const agentTools = {
 
       try {
         const [resultA, resultB] = await Promise.all([
-          client.executeTool("execute-sql", { sql: queryA.sql }),
-          client.executeTool("execute-sql", { sql: queryB.sql }),
+          client.executeTool(`${toolboxId}-execute-sql`, { sql: queryA.sql }),
+          client.executeTool(`${toolboxId}-execute-sql`, { sql: queryB.sql }),
         ]);
 
         const formattedA = formatQueryResult(resultA);
@@ -170,4 +171,5 @@ export const agentTools = {
       }
     },
   }),
-};
+  };
+}

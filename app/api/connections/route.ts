@@ -1,11 +1,10 @@
 import { NextResponse } from "next/server";
-
 import prisma from "@/lib/db";
-import {
-  createConnectionSchema,
-  type ConnectionTestResult,
-} from "@/lib/types/api";
+import type { Prisma } from "@/generated/prisma/client";
+import { createConnectionSchema } from "@/lib/types/api";
 import { discoverAndSync } from "@/lib/catalog/discover";
+import { getSourceType, generateToolboxId } from "@/lib/connections/source-registry";
+import { regenerateAndRestart } from "@/lib/toolbox/manager";
 
 export async function GET(): Promise<NextResponse> {
   const connections = await prisma.dataSource.findMany({
@@ -26,51 +25,63 @@ export async function POST(req: Request): Promise<NextResponse> {
     );
   }
 
+  const sourceType = getSourceType(parsed.data.type);
+  if (!sourceType) {
+    return NextResponse.json(
+      { error: `Unsupported source type: ${parsed.data.type}` },
+      { status: 400 },
+    );
+  }
+
+  const toolboxId = generateToolboxId(parsed.data.name);
+
+  // Build connectionUri from params if the type supports it
+  const connectionUri =
+    parsed.data.connectionUri ??
+    sourceType.buildConnectionUri?.(parsed.data.connectionParams ?? {}) ??
+    null;
+
   const connection = await prisma.dataSource.create({
     data: {
       name: parsed.data.name,
       type: parsed.data.type,
-      connectionUri: parsed.data.connectionUri,
-      toolboxId: `source-${Date.now()}`,
-      status: "pending",
+      connectionUri,
+      connectionParams: (parsed.data.connectionParams ?? undefined) as Prisma.InputJsonValue | undefined,
+      toolboxId,
+      status: "connected",
     },
   });
 
-  // TODO: test connection via Toolbox
-  const testResult: ConnectionTestResult = { success: true };
+  // Regenerate toolbox config and restart container
+  try {
+    await regenerateAndRestart();
+  } catch (err) {
+    console.error("[connections] Toolbox restart failed:", err);
+  }
 
+  // For PostgreSQL, run discovery if we have a URI
   let databaseDocId: string | null = null;
-
-  if (testResult.success) {
-    await prisma.dataSource.update({
-      where: { id: connection.id },
-      data: { status: "connected" },
-    });
-
-    if (parsed.data.connectionUri) {
-      try {
-        const databaseDoc = await discoverAndSync(
-          parsed.data.connectionUri,
-          parsed.data.name,
-        );
-        databaseDocId = databaseDoc.id;
-        await prisma.dataSource.update({
-          where: { id: connection.id },
-          data: { databaseDocId: databaseDoc.id },
-        });
-      } catch (err) {
-        console.error("[connections] Discovery failed:", err);
-      }
+  if (connectionUri) {
+    try {
+      const databaseDoc = await discoverAndSync(
+        connectionUri,
+        parsed.data.name,
+        parsed.data.connectionParams as Record<string, unknown> | undefined,
+        parsed.data.type,
+      );
+      databaseDocId = databaseDoc.id;
+      await prisma.dataSource.update({
+        where: { id: connection.id },
+        data: { databaseDocId: databaseDoc.id },
+      });
+    } catch (err) {
+      console.error("[connections] Discovery failed:", err);
     }
   }
 
   return NextResponse.json(
     {
-      connection: {
-        ...connection,
-        status: testResult.success ? "connected" : "error",
-      },
-      testResult,
+      connection: { ...connection, status: "connected" },
       databaseDocId,
     },
     { status: 201 },

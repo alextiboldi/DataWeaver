@@ -31,9 +31,16 @@ export interface QueryResponse {
 export const createConnectionSchema = z.object({
   name: z.string().min(1),
   type: z.string().min(1),
-  connectionUri: z.string().min(1),
+  connectionParams: z.record(z.string(), z.unknown()).optional(),
+  connectionUri: z.string().optional(),
 });
 export type CreateConnectionRequest = z.infer<typeof createConnectionSchema>;
+
+export const testConnectionSchema = z.object({
+  type: z.string().min(1),
+  connectionParams: z.record(z.string(), z.unknown()).optional(),
+});
+export type TestConnectionRequest = z.infer<typeof testConnectionSchema>;
 
 export interface ConnectionTestResult {
   success: boolean;

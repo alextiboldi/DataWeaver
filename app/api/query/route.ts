@@ -4,6 +4,7 @@ import { formatQueryResult } from "@/lib/agent/formatter";
 import { validateQuery } from "@/lib/agent/validation";
 import { getToolboxClient } from "@/lib/toolbox/client";
 import { queryRequestSchema, type QueryResponse } from "@/lib/types/api";
+import prisma from "@/lib/db";
 
 export async function POST(req: Request): Promise<NextResponse<QueryResponse | { error: string; details?: unknown }>> {
   const body: unknown = await req.json();
@@ -24,9 +25,15 @@ export async function POST(req: Request): Promise<NextResponse<QueryResponse | {
     );
   }
 
+  const ds = await prisma.dataSource.findUnique({
+    where: { id: parsed.data.dataSourceId },
+    select: { toolboxId: true },
+  });
+  const toolboxId = ds?.toolboxId ?? "sample-pg";
+
   try {
     const client = getToolboxClient();
-    const result = await client.executeTool("execute-sql", {
+    const result = await client.executeTool(`${toolboxId}-execute-sql`, {
       sql: parsed.data.sql,
     });
     const formatted = formatQueryResult(result);

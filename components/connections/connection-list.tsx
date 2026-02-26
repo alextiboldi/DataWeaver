@@ -1,8 +1,10 @@
 "use client";
 
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Database } from "lucide-react";
+import { Database, Trash2 } from "lucide-react";
+import { SOURCE_TYPES } from "@/lib/connections/source-registry";
 
 interface DataSourceItem {
   id: string;
@@ -14,9 +16,10 @@ interface DataSourceItem {
 
 interface ConnectionListProps {
   connections: DataSourceItem[];
+  onDelete?: (id: string) => void;
 }
 
-export function ConnectionList({ connections }: ConnectionListProps) {
+export function ConnectionList({ connections, onDelete }: ConnectionListProps) {
   if (connections.length === 0) {
     return (
       <div className="text-center py-12 text-muted-foreground">
@@ -29,22 +32,43 @@ export function ConnectionList({ connections }: ConnectionListProps) {
 
   return (
     <div className="space-y-3">
-      {connections.map((conn) => (
-        <Card key={conn.id} className="p-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Database className="size-5 text-muted-foreground" />
-            <div>
-              <p className="font-medium">{conn.name}</p>
-              <p className="text-sm text-muted-foreground">{conn.type}</p>
+      {connections.map((conn) => {
+        const sourceType = SOURCE_TYPES[conn.type];
+        const displayName = sourceType?.displayName ?? conn.type;
+
+        return (
+          <Card key={conn.id} className="p-4 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Database className="size-5 text-muted-foreground" />
+              <div>
+                <p className="font-medium">{conn.name}</p>
+                <p className="text-sm text-muted-foreground">{displayName}</p>
+              </div>
             </div>
-          </div>
-          <Badge
-            variant={conn.status === "connected" ? "default" : "destructive"}
-          >
-            {conn.status}
-          </Badge>
-        </Card>
-      ))}
+            <div className="flex items-center gap-2">
+              <Badge
+                variant={conn.status === "connected" ? "default" : "destructive"}
+              >
+                {conn.status}
+              </Badge>
+              {onDelete && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="size-8 text-muted-foreground hover:text-destructive"
+                  onClick={() => {
+                    if (confirm(`Delete connection "${conn.name}"?`)) {
+                      onDelete(conn.id);
+                    }
+                  }}
+                >
+                  <Trash2 className="size-4" />
+                </Button>
+              )}
+            </div>
+          </Card>
+        );
+      })}
     </div>
   );
 }

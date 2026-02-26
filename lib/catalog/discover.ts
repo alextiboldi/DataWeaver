@@ -3,8 +3,13 @@ import { introspectDirect } from "./direct-introspect";
 import { computeFingerprint } from "./fingerprint";
 import { humanize } from "./utils";
 
-export async function discoverAndSync(connectionUri: string, name: string) {
-  const fingerprint = computeFingerprint(connectionUri);
+export async function discoverAndSync(
+  connectionUri: string,
+  name: string,
+  connectionParams?: Record<string, unknown>,
+  type?: string
+) {
+  const fingerprint = computeFingerprint(connectionUri, connectionParams, type);
   const schema = await introspectDirect(connectionUri);
 
   const databaseDoc = await prisma.databaseDoc.upsert({

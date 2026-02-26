@@ -1,10 +1,10 @@
 import { getToolboxClient } from "./client";
 import type { SchemaInfo, SchemaTable, SchemaColumn } from "@/lib/types/toolbox";
 
-export async function introspectSchema(): Promise<SchemaInfo> {
+export async function introspectSchema(toolboxId: string = "sample-pg"): Promise<SchemaInfo> {
   const client = getToolboxClient();
 
-  const tablesResult = await client.executeTool("list-tables");
+  const tablesResult = await client.executeTool(`${toolboxId}-list-tables`);
   const tableNames = tablesResult.rows.map(
     (r) => r.table_name as string
   );
@@ -12,11 +12,11 @@ export async function introspectSchema(): Promise<SchemaInfo> {
   const tables: SchemaTable[] = [];
 
   for (const tableName of tableNames) {
-    const columnsResult = await client.executeTool("describe-table", {
+    const columnsResult = await client.executeTool(`${toolboxId}-describe-table`, {
       table_name: tableName,
     });
 
-    const fkResult = await client.executeTool("get-foreign-keys", {
+    const fkResult = await client.executeTool(`${toolboxId}-get-foreign-keys`, {
       table_name: tableName,
     });
 
