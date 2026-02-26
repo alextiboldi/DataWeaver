@@ -10,6 +10,7 @@ import {
   Blocks,
   Puzzle,
   Hexagon,
+  Workflow,
 } from "lucide-react";
 import { SessionProvider } from "next-auth/react";
 import { Providers } from "@/components/providers";
@@ -35,6 +36,7 @@ const COLLAPSE_DELAY = 300;
 const navItems = [
   { title: "Dashboards", href: "/dashboards", icon: LayoutDashboard },
   { title: "Connections", href: "/connections", icon: Cable },
+  { title: "Pipelines", href: "/pipelines", icon: Workflow },
   { title: "Data Catalog", href: "/catalog", icon: BookOpen },
   { title: "Semantic Models", href: "/semantic", icon: Blocks },
   { title: "Components", href: "/components", icon: Puzzle },
